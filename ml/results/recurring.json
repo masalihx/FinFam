@@ -1,0 +1,81 @@
+{
+  "setup": {
+    "history_until": "2026-06-30",
+    "train_series": 7215,
+    "test_series": 2805,
+    "test_families": 30
+  },
+  "detection": {
+    "baseline_3_times_3_months": {
+      "precision": 0.165,
+      "recall": 0.895,
+      "f1": 0.278
+    },
+    "model": {
+      "precision": 0.956,
+      "recall": 0.976,
+      "f1": 0.966
+    }
+  },
+  "next_payment": {
+    "series_checked": 275,
+    "baseline_last_plus_30_days": {
+      "median_days_off": 0.0,
+      "within_3_days": 0.84,
+      "median_amount_error": 0.0
+    },
+    "model": {
+      "median_days_off": 0.0,
+      "within_3_days": 0.96,
+      "median_amount_error": 0.0
+    }
+  },
+  "error_examples": {
+    "missed": [
+      {
+        "key": "dominion va/nc power",
+        "n": 21,
+        "gap_median": 31.0,
+        "median_amount": -65.74,
+        "prob": 0.0
+      },
+      {
+        "key": "square inc sdv-vrfy emily harris",
+        "n": 34,
+        "gap_median": 3.0,
+        "median_amount": 59.62,
+        "prob": 0.0
+      },
+      {
+        "key": "disney plus ca",
+        "n": 2,
+        "gap_median": 17.0,
+        "median_amount": -9.99,
+        "prob": 0.0
+      }
+    ],
+    "false_alarm": [
+      {
+        "key": "capital one mobile pmt web id:",
+        "n": 21,
+        "gap_median": 30.0,
+        "median_amount": -40.0,
+        "prob": 1.0
+      },
+      {
+        "key": "capital one mobile pymt",
+        "n": 21,
+        "gap_median": 30.0,
+        "median_amount": 40.0,
+        "prob": 1.0
+      },
+      {
+        "key": "purchase interest charge",
+        "n": 21,
+        "gap_median": 31.0,
+        "median_amount": -147.03,
+        "prob": 1.0
+      }
+    ]
+  }
+}

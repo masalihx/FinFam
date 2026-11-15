@@ -1,0 +1,12 @@
+{
+  "gemini_model": "gemini-3.5-flash",
+  "n": 100,
+  "model": {
+    "median_abs_pct_error": 0.374,
+    "within_25pct": 0.34
+  },
+  "gemini": {
+    "median_abs_pct_error": 0.245,
+    "within_25pct": 0.5
+  }
+}

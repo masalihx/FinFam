@@ -1,0 +1,32 @@
+{
+  "setup": {
+    "gemini_model": "gemini-3.5-flash",
+    "validation_products": 200,
+    "test_products": 100,
+    "blend_weight_our_model": 0.05,
+    "band_log": [
+      -0.13502593099271143,
+      0.3169790932072951
+    ]
+  },
+  "test": {
+    "baseline_category_median": {
+      "median_abs_pct_error": 0.543,
+      "within_25pct": 0.25
+    },
+    "our_model": {
+      "median_abs_pct_error": 0.374,
+      "within_25pct": 0.34
+    },
+    "gemini": {
+      "median_abs_pct_error": 0.258,
+      "within_25pct": 0.46
+    },
+    "hybrid": {
+      "median_abs_pct_error": 0.261,
+      "within_25pct": 0.48,
+      "range_coverage": 0.48,
+      "median_range_width_ratio": 1.57
+    }
+  }
+}

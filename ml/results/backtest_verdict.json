@@ -1,0 +1,125 @@
+{
+  "setup": {
+    "purchases": 4033,
+    "families": 83,
+    "harmful_share": 0.526,
+    "months": "2026-04..2026-09",
+    "verdict_not_worth_it": 1125,
+    "verdict_think": 410,
+    "not_in_backtest": "market price and goals (bank lines have no product title; dataset has no goals)",
+    "overspend_definition": "category month total > 1.10 x usual level"
+  },
+  "same_number_of_warnings": {
+    "rule_50_30_20": {
+      "postponed_purchases": 1125,
+      "postponed_share": 0.279,
+      "precision": 0.588,
+      "recall": 0.312,
+      "f1": 0.408,
+      "overspend_avoided_usd": 122177.15,
+      "avoided_per_family_month_usd": 278.94,
+      "false_alarms": 463
+    },
+    "proportion": {
+      "postponed_purchases": 1125,
+      "postponed_share": 0.279,
+      "precision": 0.81,
+      "recall": 0.429,
+      "f1": 0.561,
+      "overspend_avoided_usd": 135123.08,
+      "avoided_per_family_month_usd": 308.5,
+      "false_alarms": 214
+    },
+    "overspend_model_only": {
+      "postponed_purchases": 1125,
+      "postponed_share": 0.279,
+      "precision": 0.969,
+      "recall": 0.513,
+      "f1": 0.671,
+      "overspend_avoided_usd": 152397.25,
+      "avoided_per_family_month_usd": 347.94,
+      "false_alarms": 35
+    },
+    "verdict": {
+      "postponed_purchases": 1125,
+      "postponed_share": 0.279,
+      "precision": 0.781,
+      "recall": 0.414,
+      "f1": 0.541,
+      "overspend_avoided_usd": 154922.66,
+      "avoided_per_family_month_usd": 353.7,
+      "false_alarms": 246
+    }
+  },
+  "verdict_reasons": {
+    "high_risk": 869,
+    "above_usual_price": 478,
+    "both": 222
+  },
+  "error_examples": {
+    "not_worth_it_but_fine": [
+      {
+        "customer_id": "C001587",
+        "transaction_date": "2026-08-23T00:00:00.000",
+        "label": "shopping",
+        "price": 1458.47,
+        "description": "AMAZON MKTPL*5BA8GD073 Amzn.com/bill WA",
+        "risk": 0.0404022979,
+        "budget": 3416.05,
+        "total": 3013.54
+      },
+      {
+        "customer_id": "C000816",
+        "transaction_date": "2026-08-26T00:00:00.000",
+        "label": "shopping",
+        "price": 1072.79,
+        "description": "Debit Card Purchase - WF WAYFAIR4370497459",
+        "risk": 0.2299130867,
+        "budget": 2442.755,
+        "total": 2086.18
+      },
+      {
+        "customer_id": "C000573",
+        "transaction_date": "2026-05-04T00:00:00.000",
+        "label": "shopping",
+        "price": 861.14,
+        "description": "AMAZON MKTPL*BBV8JRE93 Amzn.com/bill WA",
+        "risk": 0.8876855822,
+        "budget": 1597.695,
+        "total": 1744.44
+      }
+    ],
+    "buy_but_harmful": [
+      {
+        "customer_id": "C001587",
+        "transaction_date": "2026-06-25T00:00:00.000",
+        "label": "shopping",
+        "price": 493.39,
+        "description": "CHECKCARD 0625 ETSY.COM BROOKLYN NY 20596493450549095212924",
+        "risk": 0.054989147,
+        "budget": 2932.075,
+        "total": 6270.19
+      },
+      {
+        "customer_id": "C001587",
+        "transaction_date": "2026-06-17T00:00:00.000",
+        "label": "shopping",
+        "price": 417.36,
+        "description": "AMAZON MKTPL*485K11433 Amzn.com/bill WA",
+        "risk": 0.1159562712,
+        "budget": 2932.075,
+        "total": 6270.19
+      },
+      {
+        "customer_id": "C001587",
+        "transaction_date": "2026-06-11T00:00:00.000",
+        "label": "shopping",
+        "price": 377.69,
+        "description": "WALMART.COM BENTONVILLE AR",
+        "risk": 0.1056594054,
+        "budget": 2932.075,
+        "total": 6270.19
+      }
+    ]
+  }
+}

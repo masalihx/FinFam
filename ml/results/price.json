@@ -1,0 +1,64 @@
+{
+  "setup": {
+    "products": 80457,
+    "train": 66104,
+    "val": 7076,
+    "test": 7277,
+    "split": "by store/brand",
+    "prices_as_of": 2023
+  },
+  "model": {
+    "median_abs_pct_error": 0.371,
+    "within_25pct": 0.359,
+    "range_coverage": 0.487,
+    "median_range_width_ratio": 2.16
+  },
+  "baseline_category": {
+    "median_abs_pct_error": 0.536,
+    "within_25pct": 0.242,
+    "range_coverage": 0.512,
+    "median_range_width_ratio": 3.13
+  },
+  "error_examples": {
+    "too_low": [
+      {
+        "title": "DHDM Cat Scratching Posts Indoor Cats Cratcher Cats Kittens Tall Cactus Scratching Post Climbing Frame",
+        "main_category": "Pet Supplies",
+        "price": 3622.11,
+        "point": 25.57
+      },
+      {
+        "title": "JORESTECH Continuous Plastic Bag Band Sealing with Date Printer Machine (Stainless Steel, E-CBS-800I)",
+        "main_category": "Amazon Home",
+        "price": 1480.0,
+        "point": 38.81
+      },
+      {
+        "title": "(JF-F6/8LW+BS-121GOLD+CAP-TY121F) Female Foam Dress Form pure white linen cover",
+        "main_category": "Arts, Crafts & Sewing",
+        "price": 514.88,
+        "point": 15.77
+      }
+    ],
+    "too_high": [
+      {
+        "title": "Alptop 64GB Class 10 Memory Card for Outdoor 8MP 4K PTZ IP POE Dome Ceiling Security Camera Pan Tilt 5xOptical Zoom 100ft IR Night Vision Motion Detection Remote View RTSP",
+        "main_category": "Camera & Photo",
+        "price": 9.99,
+        "point": 175.29
+      },
+      {
+        "title": "Typhoon TH158 Adult Modular Helmet - Breath Box",
+        "main_category": "Automotive",
+        "price": 14.88,
+        "point": 187.77
+      },
+      {
+        "title": "Byikun Bluetooth Headphones, Wireless Earbuds, True Bone Conduction Concept Bluetooth Headset Does Not Enter The Ear, Wireless Sports, Noise Cancelling Headphones, Earbud & in-Ear Headphones",
+        "main_category": "All Electronics",
+        "price": 2.99,
+        "point": 29.03
+      }
+    ]
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "gemini_model": "gemini-3.5-flash",
+  "recurring": {
+    "test_series": 100,
+    "gemini": {
+      "precision": 0.75,
+      "recall": 1.0,
+      "f1": 0.857
+    },
+    "note": "Gemini sees a text summary of each series (count, gap, amount), not the raw dates.",
+    "model_features_used": [
+      "n",
+      "n_months",
+      "month_coverage",
+      "gap_median",
+      "gap_cv",
+      "gap_near_month",
+      "gap_near_week",
+      "gap_near_2weeks",
+      "amount_log",
+      "amount_cv",
+      "amount_same_share",
+      "day_of_month_std",
+      "is_inflow",
+      "span_days"
+    ],
+    "our_model_same_100": {
+      "precision": 0.917,
+      "recall": 0.917,
+      "f1": 0.917
+    }
+  },
+  "categorization": {
+    "test_transactions": 200,
+    "our_model_macro_f1": 0.646,
+    "gemini_macro_f1": 0.833,
+    "our_model_accuracy": 0.865,
+    "gemini_accuracy": 0.97
+  }
+}
