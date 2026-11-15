@@ -1,9 +1,8 @@
-// Product verdict: Buy / Think about it / Not worth it (port of ml/verdict.py and backend verdict_for).
-// Inputs are ML outputs: overspend risk, market price range, the family's usual prices, goals, needs/wants.
+// Product verdict: Buy / Think about it / Not worth it (port of ml/verdict.py).
+// Inputs are ML outputs: overspend risk, market price from our database, the family's usual prices, goals.
 import { FORECAST_CATEGORIES } from "./features.js";
 import { CATEGORY_NAMES, monthlyFreeCash, planGoals, riskRow, familyState, usualP90, AVG_DAYS_IN_MONTH } from "./finance.js";
-import { monthIndex, firstOfMonth } from "./dates.js";
-import { estimatePrice } from "./gemini.js";
+import { daysInMonth, dayOf, monthIndex, firstOfMonth, parse } from "./dates.js";
 
 const RED_RISK = 0.75, MIN_RISK_JUMP = 0.05, MARKET_TOLERANCE = 0.10, MIN_GOAL_PRICE = 20;
 const money = (x) => "$" + Math.round(x).toLocaleString("en-US");
@@ -29,8 +28,6 @@ const TITLE_KEYWORDS = {
   subscriptions: ["subscription", "membership", "monthly plan"],
   dining: ["restaurant", "meal delivery", "pizza", "burger"],
 };
-const PRICE_HINT = { shopping: "Amazon Home", entertainment: "Video Games", health: "Health & Personal Care",
-  personal_care: "All Beauty", education_childcare: "Office Products", groceries: "Grocery" };
 const MARKET_CATEGORIES = new Set(["shopping", "personal_care", "health", "education_childcare", "groceries"]);
 
 export function categoryForProduct(title, url) {
@@ -41,23 +38,6 @@ export function categoryForProduct(title, url) {
   const site = Object.entries(SITE_CATEGORIES).find(([k]) => host.includes(k))?.[1];
   if (site) return byWords(["education_childcare", "health", "entertainment"]) || site;
   return byWords(Object.keys(TITLE_KEYWORDS)) || "shopping";
-}
-
-// ------------------------------------------------------------------ market price (our model + Gemini)
-
-export async function marketPrice(app, title, category) {
-  const spec = app.models.priceSpec, hint = PRICE_HINT[category] || "Amazon Home";
-  const ours = Math.exp(app.models.price.predict(`${hint} | ${title.replace(/\s+/g, " ").trim().toLowerCase()}`));
-  const cache = app.store.data.price_cache, key = title.slice(0, 200);
-  let gemini = cache[key] ?? null, source = "our model + Gemini";
-  if (gemini == null) {
-    try { gemini = await estimatePrice(app.store.data.settings, title, hint); cache[key] = gemini; await app.store.save(); }
-    catch { gemini = null; }
-  }
-  let mid, band;
-  if (gemini) { mid = Math.exp(spec.blend_weight * Math.log(ours) + (1 - spec.blend_weight) * Math.log(gemini)); band = spec.hybrid_band; }
-  else { mid = ours; band = spec.band; source = "our model only (Gemini not available)"; }
-  return { low: mid * Math.exp(band[0]), high: mid * Math.exp(band[1]), typical: mid, our_model: ours, gemini, source, prices_as_of: 2023 };
 }
 
 // ------------------------------------------------------------------ decision rules
@@ -105,27 +85,25 @@ export function reasonablePrice(riskAt, threshold, upper, tol = 1) {
   return lo;
 }
 
-// ------------------------------------------------------------------ full check (website/extension entry point)
+// ------------------------------------------------------------------ full check
 
-export async function checkPurchase(app, { title = "", price, url = "", category = null }) {
+export function checkPurchase(app, { title = "", price, url = "", category = null }) {
   const s = app.store, models = app.models, today = app.today, tx = s.data.transactions;
-  if (!tx.length) throw new Error("No transactions yet. Add data or load the demo family first.");
+  if (!tx.length) throw new Error("No money data yet. Add your expenses and income first.");
   price = Number(price);
   if (!(price > 0)) throw new Error("Enter a price above $0.");
   const cat = CATEGORY_NAMES[category] ? category : categoryForProduct(title, url);
   const kind = s.kindOf(cat), isNeed = kind === "need", name = CATEGORY_NAMES[cat] || cat;
-  const market = title.trim() && MARKET_CATEGORIES.has(cat) ? await marketPrice(app, title, cat) : null;
+  const market = title.trim() && MARKET_CATEGORIES.has(cat) && app.market ? app.market.lookup(title) : null;
 
-  const state = familyState(tx, s.members(), today);
-  const limit = s.limits()[cat] ?? null;
+  const state = familyState(tx, s.data.family.children, today);
   const forecastable = FORECAST_CATEGORIES.includes(cat);
-  const before = forecastable ? riskRow(models, state, cat, today, 0, limit) : null;
-  const after = forecastable ? riskRow(models, state, cat, today, price, limit) : null;
+  const before = forecastable ? riskRow(models, state, cat, today, 0) : null;
+  const after = forecastable ? riskRow(models, state, cat, today, price) : null;
   const threshold = models.overspendSpec.threshold;
 
   const free = monthlyFreeCash(tx, today);
-  const behind = planGoals(s.data.goals.filter((g) => g.member_id === null), free, today).filter((g) => !g.on_track);
-  const goal = behind[0] || null;
+  const goal = planGoals(s.data.goals, free, today).find((g) => !g.on_track) || null;
   const delay = goal && free > 0 ? Math.round(price / (free / AVG_DAYS_IN_MONTH)) : null;
 
   const v = decide({ price, categoryName: name, isNeed, riskBefore: before?.p ?? null, riskAfter: after?.p ?? null,
@@ -133,14 +111,14 @@ export async function checkPurchase(app, { title = "", price, url = "", category
     goalName: goal?.name, goalBehind: !!goal && !isNeed, goalDelayDays: delay });
 
   let reasonable = null;
-  if (before && !isNeed) reasonable = reasonablePrice((x) => riskRow(models, state, cat, today, x, limit).p, threshold, Math.max(price * 3, 50));
+  if (before && !isNeed) reasonable = reasonablePrice((x) => riskRow(models, state, cat, today, x).p, threshold, Math.max(price * 3, 50));
+  const { y, m } = parse(today);
   return {
     ...v, title_text: { buy: "Buy", think: "Think about it", not_worth_it: "Not worth it" }[v.decision],
     category: cat, category_name: name, kind, risk_before: before?.p ?? null, risk_after: after?.p ?? null,
-    spent_this_month: before?.row.spent_to_date ?? null, budget: before?.row.budget ?? null, market,
-    reasonable_price: reasonable, no_room_this_month: !!before && !isNeed && reasonable === null,
-    next_month_starts: firstOfMonth(monthIndex(today) + 1), goal: goal?.name || null, goal_delay_days: delay,
-    checked_for: s.me?.name, title, price, url,
+    spent_this_month: before?.row.spent_to_date ?? null, budget: before?.row.budget ?? null,
+    left_this_month: before ? before.row.budget - before.row.spent_to_date : null, days_left: daysInMonth(y, m) - dayOf(today),
+    market, reasonable_price: reasonable, no_room_this_month: !!before && !isNeed && reasonable === null,
+    next_month_starts: firstOfMonth(monthIndex(today) + 1), goal: goal?.name || null, goal_delay_days: delay, title, price, url,
   };
 }
-

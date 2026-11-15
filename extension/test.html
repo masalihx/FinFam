@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <title>FinPilot engine tests</title>
 <style>body{font:14px system-ui;margin:20px} .ok{color:#15803d} .bad{color:#b91c1c} pre{white-space:pre-wrap}</style>
-<h1>FinPilot engine tests (JS vs Python)</h1>
+<h1>FinPilot engine tests (JS vs Python), v4</h1>
 <div id="out">running…</div>
 <script type="module">
 import { loadModels } from "./lib/ml.js";
@@ -25,9 +25,8 @@ check("recurring probabilities", m.tests.recurring.every((t) => close(m.recurrin
 // Task 2: live features and money math on the demo family (fixture computed by the Python backend)
 const fx = await (await fetch("./data/test_fixture.json")).json();
 const tx = fx.transactions;
-const members = [{ id: 1, role: "parent" }, { id: 2, role: "parent" }, { id: 3, role: "teen" }, { id: 4, role: "teen" }];
 check("yearly income", close(yearlyIncome(tx, fx.today), fx.yearly_income, 0.01), `${yearlyIncome(tx, fx.today)} vs ${fx.yearly_income}`);
-const state = familyState(tx, members, fx.today);
+const state = familyState(tx, 2, fx.today);
 const names = m.overspendSpec.features;
 for (const c of FORECAST_CATEGORIES) {
   const row = features(state, c, fx.today);
@@ -51,56 +50,87 @@ check("goal plans", goals.every((g) => { const e = gExp.find((x) => x.name === g
   JSON.stringify(goals.map((g) => [g.name, g.needed_per_month, g.allocated_per_month, g.projected_date, g.on_track])));
 check("usual price (shopping p90)", close(usualP90(tx, "shopping", fx.today), fx.usual_p90_shopping, 0.01), `${usualP90(tx, "shopping", fx.today)} vs ${fx.usual_p90_shopping}`);
 
-// Task 3: store, demo family, profiles and rights
-const { Store } = await import("./lib/store.js");
+// Task 13: family password store and demo family
+const { Store, DEMO_PASSWORD, validPassword, generatePassword, normalizePassword } = await import("./lib/store.js");
+check("password rules", validPassword("DEMO26") && validPassword("7K2PQ9") && !validPassword("ABCDEF") && !validPassword("123456") && !validPassword("AB12C") && !validPassword("AB-123"));
+check("generated passwords valid", Array.from({ length: 50 }, generatePassword).every(validPassword));
 const demo = await (await fetch("./data/demo_family.json")).json();
 const store = new Store(m);
 const t0 = performance.now();
 await store.loadDemo(demo, "2026-11-15");
 const ms = performance.now() - t0;
 check("demo loads under 3 s", ms < 3000, `${ms.toFixed(0)} ms`);
-check("4 profiles", store.members().length === 4 && store.members().filter((x) => x.role === "teen").length === 2);
+check("demo family: 2 children, no profiles", store.data.family.children === 2 && !("members" in store.data.family) && store.data.family.is_demo);
 check("no transactions after today", store.data.transactions.every((t) => t.date <= "2026-11-15"));
 check("every transaction categorized", store.data.transactions.every((t) => t.category));
 check("seed correction applied", store.data.transactions.filter((t) => t.description === "PURCHASE INTEREST CHARGE").every((t) => t.category === "fees"));
-let wrong = false; try { await store.login(1, "0000"); } catch (e) { wrong = true; }
-check("wrong PIN rejected", wrong);
-await store.login(3, "3333");
-let blocked = false; try { await store.saveSetup([]); } catch (e) { blocked = e.message.includes("Only parents"); }
-check("teen cannot change setup", blocked);
-await store.addGoal({ name: "Bike", target: 300, deadline: "2027-05-01", personal: true });
-check("teen adds personal goal", store.data.goals.some((g) => g.name === "Bike" && g.member_id === 3));
-let famBlocked = false; try { await store.addGoal({ name: "Trip", target: 900, deadline: "2027-05-01", personal: false }); } catch (e) { famBlocked = true; }
-check("teen cannot add family goal", famBlocked);
-await store.login(1, "1111");
+const demoCount = store.data.transactions.length;
+const resumed = new Store(m);
+check("panel re-opens the unlocked family", (await resumed.resume()) && resumed.data.transactions.length === demoCount);
+await store.lock();
+check("lock forgets the family", !store.ready && !(await new Store(m).resume()));
+let wrong = false; try { await store.unlock("ZZZ999"); } catch (e) { wrong = true; }
+check("wrong password rejected", wrong && !store.ready);
+await store.unlock(" demo26 ");
+check("password is case-insensitive", store.ready && store.data.transactions.length === demoCount);
+let dup = false; try { await store.createFamily("Copycats", DEMO_PASSWORD); } catch (e) { dup = e.message.includes("already used"); }
+check("password already used is rejected", dup);
+let weak = false; try { await store.createFamily("Weak", "abcdef"); } catch (e) { weak = true; }
+check("weak password rejected", weak);
+const pw = generatePassword();
+await store.createFamily("The Smiths", pw, 1);
+check("new family starts empty", store.data.transactions.length === 0 && store.data.family.name === "The Smiths");
+await store.addEntry({ kind: "expense", amount: 23.4, description: "Starbucks latte" });
+await store.addEntry({ kind: "income", amount: "1500", description: "Salary ACME payroll" });
+const [e1, e2] = store.data.transactions;
+check("expense saved negative, category by ML", e1.amount === -23.4 && e1.category === "dining" && e1.category_source === "model", JSON.stringify(e1));
+check("income saved positive", e2.amount === 1500 && e2.category === "income", JSON.stringify(e2));
+let noAmount = false; try { await store.addEntry({ kind: "expense", amount: 0, description: "x" }); } catch (e) { noAmount = true; }
+check("zero amount rejected", noAmount);
+await store.lock(); await store.unlock(normalizePassword(pw));
+check("each family sees only its own money", store.data.transactions.length === 2);
+await store.deleteFamily();
+await store.unlock(DEMO_PASSWORD);
 const fixTx = store.data.transactions.find((t) => /T-?MOBILE/i.test(t.description) && t.category_source === "model");
 const n = fixTx ? await store.fixCategory(fixTx.id, "utilities") : -1;
 check("category fix updates same merchant", n > 0, `updated ${n}`);
 
-// Task 5: verdict rules and full check on the demo family
+// Task 12: market price from the database (kNN)
+const { MarketIndex } = await import("./lib/market.js");
+const t1 = performance.now();
+const indexSpec = await (await fetch("./models/price_index.json")).json();
+const market = new MarketIndex(indexSpec);
+check("market index builds under 4 s", performance.now() - t1 < 4000, `${(performance.now() - t1).toFixed(0)} ms`);
+const mBad = indexSpec.tests.filter((t) => { const r = market.lookup(t.title); return !r || Math.abs(r.median - t.expected) > 0.01; })
+  .map((t) => `${t.title.slice(0, 40)}: ${market.lookup(t.title)?.median} vs ${t.expected}`);
+check("market median matches Python", mBad.length === 0, mBad.join("; "));
+
+// Task 5/16: verdict rules and full check on the demo family
 const { decide, checkPurchase } = await import("./lib/verdict.js");
 const cases = await (await fetch("./data/verdict_cases.json")).json();
 const badCases = cases.filter((c) => { const v = decide(c.in); return v.decision !== c.decision || v.reasons.length !== c.n_reasons; });
 check(`verdict rules (${cases.length} cases)`, badCases.length === 0, JSON.stringify(badCases.slice(0, 3)));
-const app = { models: m, store, today: "2026-11-15" };
-const concert = await checkPurchase(app, { title: "Concert tickets", price: 100, url: "https://www.ticketmaster.com/e/1" });
+const app = { models: m, market, store, today: "2026-11-15" };
+const concert = checkPurchase(app, { title: "Concert tickets", price: 100, url: "https://www.ticketmaster.com/e/1" });
 check("concert $100 -> not worth it with a fair price", concert.decision === "not_worth_it" && concert.reasonable_price > 10 && concert.reasonable_price < 60,
   `${concert.decision} fair ${concert.reasonable_price} reasons ${concert.reasons.join(" | ")}`);
-const phones = await checkPurchase(app, { title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", price: 348, url: "https://www.amazon.com/dp/x" });
-check("headphones $348 -> not worth it, market range shown", phones.decision === "not_worth_it" && phones.market && phones.market.low > 0,
+check("verdict tells what is left this month", concert.left_this_month != null && concert.days_left === 15, `${concert.left_this_month} ${concert.days_left}`);
+const phones = checkPurchase(app, { title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", price: 348, url: "https://www.amazon.com/dp/x" });
+check("headphones $348 -> not worth it, market price shown", phones.decision === "not_worth_it" && phones.market?.median > 0 && phones.market.similar.length > 0,
   `${phones.decision} ${JSON.stringify(phones.market)}`);
-const calc = await checkPurchase(app, { title: "TI-84 Plus graphing calculator for school", price: 129, url: "https://www.amazon.com/dp/y" });
+const calc = checkPurchase(app, { title: "TI-84 Plus graphing calculator for school", price: 129, url: "https://www.amazon.com/dp/y" });
 check("school calculator judged as a need", calc.kind === "need" && calc.risk_after === null, `${calc.kind} ${calc.decision}`);
 
-// Task 12: market price from the database (kNN)
-const { MarketIndex } = await import("./lib/market.js");
-const t1 = performance.now();
-const market = new MarketIndex(await (await fetch("./models/price_index.json")).json());
-check("market index builds under 4 s", performance.now() - t1 < 4000, `${(performance.now() - t1).toFixed(0)} ms`);
-const mBad = market && (await (await fetch("./models/price_index.json")).json()).tests
-  .filter((t) => { const r = market.lookup(t.title); return !r || Math.abs(r.median - t.expected) > 0.01; })
-  .map((t) => `${t.title.slice(0, 40)}: ${market.lookup(t.title)?.median} vs ${t.expected}`);
-check("market median matches Python", mBad.length === 0, mBad.join("; "));
+// Task 14: built-in advisor, no external AI
+const { answer, answerTopic, TOPICS } = await import("./lib/assistant.js");
+const topicErrors = Object.keys(TOPICS).filter((t) => { try { return !answerTopic(app, t).reply; } catch (e) { return true; } });
+check("every advisor topic answers", topicErrors.length === 0, topicErrors.join(", "));
+const a1 = answer(app, "how much did we spend on restaurants last month?");
+check("question -> spending answer", a1.topic === "spending" && a1.reply.includes("Dining"), JSON.stringify(a1));
+const a2 = answer(app, "can I buy concert tickets for $100?");
+check("question -> purchase verdict", a2.topic === "can_afford" && a2.reply.startsWith("Not worth it"), JSON.stringify(a2));
+const a3 = answer(app, "hmm");
+check("unsure -> offers other topics", a3.alternatives.length === 2 && a3.confidence < 0.6, JSON.stringify(a3));
 
 const failed = results.filter((r) => !r.ok);
 document.getElementById("out").innerHTML = `<p class="${failed.length ? "bad" : "ok"}"><b>${results.length - failed.length}/${results.length} passed</b></p>` +

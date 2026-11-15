@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "FinPilot — is it worth it?",
-  "version": "0.3.0",
-  "description": "FinPilot: your family's money copilot inside Chrome. On any product page it checks your family budget, your usual prices and market prices: Buy, Think about it or Not worth it. Everything runs on this computer. Prototype, not financial advice.",
+  "version": "0.4.0",
+  "description": "Family money copilot: Buy, Think about it or Not worth it on any product page. Built-in ML, no AI keys. Prototype, not financial advice.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
@@ -23,7 +23,6 @@
     "activeTab"
   ],
   "host_permissions": [
-    "https://generativelanguage.googleapis.com/*",
     "https://api-m.sandbox.paypal.com/*"
   ],
   "content_scripts": [

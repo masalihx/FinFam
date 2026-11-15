@@ -19,9 +19,8 @@ export function yearlyIncome(tx, today) {
   return (sum(last.map((t) => t.amount)) * 12) / months;
 }
 
-export function familyState(tx, members, today) {
-  const teens = members.filter((m) => m.role === "teen").length;
-  return new FamilyState(tx, yearlyIncome(tx, today), teens);
+export function familyState(tx, children, today) {
+  return new FamilyState(tx, yearlyIncome(tx, today), Number(children) || 0);
 }
 
 export function outsideTransfersOut(window, maxDays = 3) {
@@ -94,8 +93,8 @@ export function lightOf(models, p) {
   return p >= models.overspendSpec.red ? "red" : p >= models.overspendSpec.threshold ? "yellow" : "green";
 }
 
-export function monthSummary(models, tx, members, today, limits) {
-  const state = familyState(tx, members, today);
+export function monthSummary(models, tx, children, today, limits = {}) {
+  const state = familyState(tx, children, today);
   const cur = monthIndex(today);
   const month = tx.filter((t) => monthIndex(t.date) === cur);
   const spentBy = {};
@@ -113,11 +112,10 @@ export function monthSummary(models, tx, members, today, limits) {
     for (const t of tx) if (monthIndex(t.date) === m && isSpending(t)) row[t.category] = (row[t.category] || 0) - t.amount;
     trend.push(row);
   }
-  const byMember = members.map((mb) => ({ ...mb, spent: -sum(month.filter((t) => isSpending(t) && t.member_id === mb.id).map((t) => t.amount)) }));
   const { y, m } = parse(today);
   return { today, days_left: daysInMonth(y, m) - dayOf(today), income_this_month: sum(month.filter(familyIncome).map((t) => t.amount)),
     spent_this_month: -sum(month.filter(isSpending).map((t) => t.amount)), free_cash_per_month: monthlyFreeCash(tx, today),
-    categories, other_spending: other, trend, by_member: byMember, state };
+    categories, other_spending: other, trend, state };
 }
 
 export function usualP90(tx, category, today) {

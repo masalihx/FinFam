@@ -6,5 +6,5 @@
     "range_coverage": 0.489,
     "median_range_width_ratio": 2.16
   },
-  "intent_macro_f1": 0.6564
+  "intent_macro_f1": 0.5294
 }

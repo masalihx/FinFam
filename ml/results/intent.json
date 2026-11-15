@@ -1,33 +1,68 @@
 {
-  "train_phrases": 361,
+  "train_phrases": 612,
   "test_questions": 47,
   "keyword_baseline": {
     "accuracy": 0.553,
     "macro_f1": 0.587
   },
   "model": {
-    "accuracy": 0.723,
-    "macro_f1": 0.698
+    "accuracy": 0.936,
+    "macro_f1": 0.939
+  },
+  "fresh_test": {
+    "questions": 20,
+    "keyword_baseline_accuracy": 0.3,
+    "model_accuracy": 0.6,
+    "model_macro_f1": 0.529,
+    "answer_or_button_right": 0.75,
+    "unsure_share": 0.45,
+    "errors": [
+      {
+        "text": "what was our biggest expense this month",
+        "true": "spending",
+        "predicted": "where_losing"
+      },
+      {
+        "text": "how close are we to the grocery limit",
+        "true": "budget_left",
+        "predicted": "goals"
+      },
+      {
+        "text": "what can we stop paying for",
+        "true": "where_losing",
+        "predicted": "can_afford"
+      },
+      {
+        "text": "which spending went up compared to normal",
+        "true": "where_losing",
+        "predicted": "spending"
+      },
+      {
+        "text": "what's on hold",
+        "true": "postponed",
+        "predicted": "spending"
+      },
+      {
+        "text": "rent date",
+        "true": "upcoming",
+        "predicted": "spending"
+      },
+      {
+        "text": "much appreciated",
+        "true": "help",
+        "predicted": "spending"
+      },
+      {
+        "text": "what is finpilot",
+        "true": "help",
+        "predicted": "budget_left"
+      }
+    ]
   },
   "model_errors": [
     {
-      "text": "sum of my clothing purchases",
-      "true": "spending",
-      "predicted": "budget_left"
-    },
-    {
-      "text": "are we going to blow the grocery budget",
+      "text": "how close am i to my limit for shopping",
       "true": "budget_left",
-      "predicted": "goals"
-    },
-    {
-      "text": "are we spending too fast this month",
-      "true": "budget_left",
-      "predicted": "spending"
-    },
-    {
-      "text": "update me on my targets",
-      "true": "goals",
       "predicted": "spending"
     },
     {
@@ -36,44 +71,9 @@
       "predicted": "budget_left"
     },
     {
-      "text": "help me spend less",
-      "true": "where_losing",
-      "predicted": "help"
-    },
-    {
-      "text": "which category grew the most",
-      "true": "where_losing",
-      "predicted": "goals"
-    },
-    {
-      "text": "how do we cut costs",
-      "true": "where_losing",
-      "predicted": "goals"
-    },
-    {
-      "text": "things i put off buying",
-      "true": "postponed",
-      "predicted": "can_afford"
-    },
-    {
       "text": "how much have i not spent thanks to waiting",
       "true": "postponed",
       "predicted": "spending"
-    },
-    {
-      "text": "which charges are about to hit our account",
-      "true": "upcoming",
-      "predicted": "goals"
-    },
-    {
-      "text": "calendar of payments for this month",
-      "true": "upcoming",
-      "predicted": "budget_left"
-    },
-    {
-      "text": "good morning",
-      "true": "help",
-      "predicted": "can_afford"
     }
   ],
   "keyword_errors": [

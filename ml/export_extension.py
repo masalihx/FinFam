@@ -22,7 +22,7 @@ from sklearn.pipeline import FeatureUnion, Pipeline
 
 sys.path.insert(0, str(Path(__file__).parent))
 from categories import CATEGORIES, NEEDS, WANTS  # noqa: E402
-from intents import INTENTS, TEST_QUESTIONS, training_phrases  # noqa: E402
+from intents import FRESH_TEST_QUESTIONS, INTENTS, TEST_QUESTIONS, training_phrases  # noqa: E402
 from overspend_features import FEATURES  # noqa: E402
 from recurring import SERIES_FEATURES  # noqa: E402
 from text_utils import normalize  # noqa: E402
@@ -104,7 +104,8 @@ def intent() -> dict:
                                preprocessor=None)
     model.fit(texts, labels)
     tt, tl = zip(*TEST_QUESTIONS)
-    f1 = f1_score(tl, model.predict(tt), labels=INTENTS, average="macro", zero_division=0)
+    ft, fl = zip(*FRESH_TEST_QUESTIONS)
+    f1 = f1_score(fl, model.predict(ft), labels=INTENTS, average="macro", zero_division=0)  # fresh, unseen questions
     clf = model.named_steps["clf"]
     return {"name": "intent", "test_macro_f1": round(f1, 4), "classes": list(clf.classes_),
             "features": export_union(model), "coef": [r(row) for row in clf.coef_], "intercept": r(clf.intercept_),
@@ -240,7 +241,7 @@ def main() -> None:
     print(f"compact price model: {pr['test']}")
     write("price", pr)
     it = intent()
-    print(f"compact intent model: test macro-F1 {it['test_macro_f1']}")
+    print(f"compact intent model: fresh-test macro-F1 {it['test_macro_f1']}")
     write("intent", it)
     write("overspend", overspend())
     write("recurring", recurring())

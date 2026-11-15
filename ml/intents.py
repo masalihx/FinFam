@@ -115,6 +115,30 @@ TEST_QUESTIONS = [
     ("ok thanks a lot", "help"),
 ]
 
+# Written on Nov 15 before adding the extra training phrases below; never used for training or tuning.
+FRESH_TEST_QUESTIONS = [
+    ("how much has gone on takeout so far", "spending"),
+    ("total for gas in october", "spending"),
+    ("what was our biggest expense this month", "spending"),
+    ("is $45 for a hoodie ok", "can_afford"),
+    ("should we get a $700 couch", "can_afford"),
+    ("i want new airpods for 179 dollars", "can_afford"),
+    ("how close are we to the grocery limit", "budget_left"),
+    ("do we still have money for eating out this month", "budget_left"),
+    ("will dining go over", "budget_left"),
+    ("when do we finish saving for the car", "goals"),
+    ("how much should we put away monthly for college", "goals"),
+    ("what can we stop paying for", "where_losing"),
+    ("which spending went up compared to normal", "where_losing"),
+    ("show what i'm waiting to buy", "postponed"),
+    ("what's on hold", "postponed"),
+    ("next bills", "upcoming"),
+    ("which subscriptions charge us next week", "upcoming"),
+    ("rent date", "upcoming"),
+    ("much appreciated", "help"),
+    ("what is finpilot", "help"),
+]
+
 KEYWORDS = [
     ("upcoming", ["upcoming", "due", "coming up", "renew", "bills"]),
     ("postponed", ["postpone", "wait list", "waiting", "delay"]),
@@ -125,6 +149,13 @@ KEYWORDS = [
     ("spending", ["spend", "spent", "expenses", "cost"]),
     ("help", ["hi", "hello", "help", "thanks", "what can you do"]),
 ]
+
+
+# Added on Nov 15 for the built-in advisor (no Gemini): more varied wording per intent.
+# Some phrases overlap the old 47 test questions, so FRESH_TEST_QUESTIONS is the honest test after this change.
+EXTRA_TEMPLATES = {'spending': ['what did {cat} cost us {month}', '{cat} total {month}', 'how much went to {cat}', 'sum of {cat} payments', '{cat} bill total', 'money spent on {cat} {month}', 'show {cat} costs', 'what have we paid for {cat}'], 'can_afford': ['thinking about {item} for {price}', 'would buying {item} hurt us', 'is it a good idea to buy {item}', 'can our family pay for {item}', 'worth buying {item} for {price}', 'should i order {item} now', '{item} costs {price}, should i'], 'budget_left': ['are we spending too fast {month}', 'is the {cat} budget ok', 'chance of going over on {cat}', 'remaining money for {cat}', 'can we still spend on {cat}', 'are we near the {cat} budget'], 'goals': ['are we behind on saving', 'update on our targets', 'how far along is {goal}', 'is {goal} on schedule', 'how much is saved for {goal}'], 'where_losing': ['how do we cut costs', 'any ideas to save', 'what is wasting our money', 'which category grew the most', 'help me spend less'], 'postponed': ['things i put off buying', 'my delayed purchases', 'how much did waiting save us', 'items i decided to wait on'], 'upcoming': ['what do we owe soon', 'charges coming up {month}', 'payments due in the next two weeks', 'calendar of payments', 'which bills hit the account soon'], 'help': ['good morning', 'can you explain what you do', 'ok thanks a lot', 'what are you', 'hello there']}
+for _intent, _templates in EXTRA_TEMPLATES.items():
+    TEMPLATES[_intent] = TEMPLATES[_intent] + _templates
 
 
 def keyword_intent(text: str) -> str:

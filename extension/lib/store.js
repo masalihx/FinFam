@@ -1,90 +1,110 @@
 // The family's data, kept only on this computer (chrome.storage.local).
-// Profiles with a PIN and roles (parent / teen); rights are checked here, not only in the UI.
+// One family = one 6-character password (letters and digits). Only a salted hash of it is stored.
 import { normalize, withSign } from "./ml.js";
 import { addDays, addMonths, monthIndex, todayStr } from "./dates.js";
 
-const KEY = "finpilot";
+const SALT_KEY = "finpilot:salt", CURRENT_KEY = "finpilot:current", FAMILY_PREFIX = "finpilot:family:";
+export const DEMO_PASSWORD = "DEMO26";
 
 // Inside the extension: chrome.storage.local. On a plain test page: localStorage (or memory with ?memory).
+const mem = new Map();
 const backend = globalThis.chrome?.storage?.local
-  ? { get: async () => (await chrome.storage.local.get(KEY))[KEY], set: (v) => chrome.storage.local.set({ [KEY]: v }) }
+  ? { get: async (k) => (await chrome.storage.local.get(k))[k], set: (k, v) => chrome.storage.local.set({ [k]: v }), del: (k) => chrome.storage.local.remove(k) }
   : globalThis.location?.search.includes("memory")
-    ? { mem: null, async get() { return this.mem; }, async set(v) { this.mem = structuredClone(v); } }
-    : { async get() { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; },
-        async set(v) { localStorage.setItem(KEY, JSON.stringify(v)); } };
+    ? { get: async (k) => (mem.has(k) ? structuredClone(mem.get(k)) : undefined), set: async (k, v) => { mem.set(k, structuredClone(v)); }, del: async (k) => { mem.delete(k); } }
+    : { get: async (k) => { const s = localStorage.getItem(k); return s ? JSON.parse(s) : undefined; },
+        set: async (k, v) => localStorage.setItem(k, JSON.stringify(v)), del: async (k) => localStorage.removeItem(k) };
 
-export class Forbidden extends Error {}
+export const normalizePassword = (p) => String(p || "").trim().toUpperCase();
+export function validPassword(p) {
+  return /^[A-Z0-9]{6}$/.test(p) && /[A-Z]/.test(p) && /\d/.test(p);
+}
+export function generatePassword() {
+  const letters = "ABCDEFGHJKLMNPQRSTUVWXYZ", digits = "23456789", all = letters + digits;
+  const pick = (s) => s[crypto.getRandomValues(new Uint32Array(1))[0] % s.length];
+  const chars = [pick(letters), pick(digits), ...Array.from({ length: 4 }, () => pick(all))];
+  for (let i = chars.length - 1; i > 0; i--) { const j = crypto.getRandomValues(new Uint32Array(1))[0] % (i + 1); [chars[i], chars[j]] = [chars[j], chars[i]]; }
+  return chars.join("");
+}
 
-async function hashPin(pin, salt) {
-  const data = new TextEncoder().encode(`${salt}:${pin}`);
-  const digest = await crypto.subtle.digest("SHA-256", data);
-  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
+async function familyKey(password) {
+  let salt = await backend.get(SALT_KEY);
+  if (!salt) { salt = crypto.randomUUID(); await backend.set(SALT_KEY, salt); }
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(`${salt}:${normalizePassword(password)}`));
+  return FAMILY_PREFIX + [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+const byDate = (a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
 
 export class Store {
-  constructor(models) { this.models = models; this.data = null; }
+  constructor(models) { this.models = models; this.key = null; this.data = null; }
 
-  async load() { this.data = (await backend.get()) || null; return this.data; }
-  async save() { await backend.set(this.data); }
   get ready() { return !!this.data; }
+  async save() { if (this.key) await backend.set(this.key, this.data); }
 
-  // ---------------------------------------------------------------- family and profiles
+  // Re-open the family that was unlocked last time on this computer (until "Lock").
+  async resume() {
+    const key = await backend.get(CURRENT_KEY);
+    const data = key ? await backend.get(key) : null;
+    if (data) { this.key = key; this.data = data; }
+    return this.ready;
+  }
 
-  async createFamily(name, members) {
-    const salt = uid();
-    this.data = { family: { name, salt, setup_done: false, needs_wants: {}, is_demo: false }, members: [], transactions: [],
-      corrections: {}, goals: [], plans: [], postponed: [], settings: {}, price_cache: {}, current: null };
-    for (const m of members) await this.addMember(m, true);
+  async unlock(password) {
+    const key = await familyKey(password);
+    const data = await backend.get(key);
+    if (!data) throw new Error("No family with this password on this computer.");
+    this.key = key; this.data = data;
+    await backend.set(CURRENT_KEY, key);
+  }
+
+  async lock() { this.key = null; this.data = null; await backend.del(CURRENT_KEY); }
+
+  async createFamily(name, password, children = 0) {
+    password = normalizePassword(password);
+    if (!validPassword(password)) throw new Error("Password: exactly 6 letters and digits, with at least one of each.");
+    const key = await familyKey(password);
+    if (await backend.get(key)) throw new Error("This password is already used by another family. Pick another one.");
+    this.key = key;
+    this.data = { family: { name: name.trim() || "Our family", children: Number(children) || 0, is_demo: false },
+      transactions: [], corrections: {}, goals: [], plans: [], postponed: [], settings: {} };
     await this.save();
+    await backend.set(CURRENT_KEY, key);
   }
 
-  async addMember({ name, role, pin, key = null, allowance = null }, skipCheck = false) {
-    if (!skipCheck) this.requireParent();
-    if (!["parent", "teen"].includes(role)) throw new Error("Role must be parent or teen.");
-    if (!/^\d{4}$/.test(String(pin))) throw new Error("PIN must be 4 digits.");
-    const id = this.data.members.length + 1;
-    this.data.members.push({ id, key, name, role, pin_hash: await hashPin(pin, this.data.family.salt), paypal_email: null,
-      allowance_amount: allowance ? allowance[0] : null, allowance_period: allowance ? allowance[1] : null });
-    return id;
-  }
-
-  members() { return this.data.members.map(({ pin_hash, ...m }) => m); }
-  member(id) { return this.members().find((m) => m.id === id); }
-  get me() { return this.data?.current ? this.member(this.data.current) : null; }
-
-  async login(memberId, pin) {
-    const m = this.data.members.find((x) => x.id === memberId);
-    if (!m || m.pin_hash !== (await hashPin(pin, this.data.family.salt))) throw new Error("Wrong PIN.");
-    this.data.current = memberId;
-    await this.save();
-    return this.me;
-  }
-  async logout() { this.data.current = null; await this.save(); }
-
-  requireMe() { if (!this.me) throw new Forbidden("Choose your profile first."); return this.me; }
-  requireParent() { if (this.requireMe().role !== "parent") throw new Forbidden("Only parents can do this."); }
+  async deleteFamily() { if (this.key) await backend.del(this.key); await this.lock(); }
 
   // ---------------------------------------------------------------- transactions
 
   categorize(items) {
     return items.map((t) => {
-      if (t.category) return { ...t, category_source: t.category_source || "file" };
+      if (t.category) return { ...t, category_source: t.category_source || "user" };
       const text = withSign(t.amount, t.description);
       const fixed = this.data.corrections[normalize(text)];
-      return { ...t, category: fixed ? fixed.category : this.models.categorizer.predict(text), category_source: "model" };
+      return { ...t, category: fixed ? fixed.category : this.models.categorizer.predict(text), category_source: fixed ? "user" : "model" };
     });
   }
 
-  async addTransactions(items, memberId, source) {
+  async addTransactions(items, source) {
     const ids = new Set(this.data.transactions.map((t) => t.id));
-    const fresh = this.categorize(items.filter((t) => !ids.has(t.id)).map((t) => ({ ...t, member_id: t.member_id ?? memberId, source: t.source || source })));
+    const fresh = this.categorize(items.filter((t) => !ids.has(t.id)).map((t) => ({ ...t, source: t.source || source })));
     this.data.transactions.push(...fresh);
-    this.data.transactions.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    this.data.transactions.sort(byDate);
     await this.save();
     return fresh.length;
   }
+
+  async addEntry({ kind, amount, description, date, category }) {
+    const value = Math.abs(Number(amount));
+    if (!(value > 0)) throw new Error("Enter an amount above $0.");
+    if (!String(description || "").trim()) throw new Error("Write what it was for.");
+    const t = { id: `manual-${uid()}`, date: date || todayStr(), amount: kind === "income" ? value : -value, description: description.trim(), channel: "manual" };
+    if (category) Object.assign(t, { category, category_source: "user" });
+    await this.addTransactions([t], "manual");
+  }
+
+  async deleteTransaction(id) { this.data.transactions = this.data.transactions.filter((t) => t.id !== id); await this.save(); }
 
   applyCorrection(text, category, exceptId = null) {
     const key = normalize(text);
@@ -97,7 +117,6 @@ export class Store {
   }
 
   async fixCategory(txId, category) {
-    this.requireMe();
     const t = this.data.transactions.find((x) => x.id === txId);
     if (!t) throw new Error("Transaction not found.");
     const n = this.applyCorrection(withSign(t.amount, t.description), category, txId);
@@ -106,90 +125,51 @@ export class Store {
     return n;
   }
 
-  // ---------------------------------------------------------------- goals, plans, postponed, setup
-
-  async addGoal({ name, target, saved = 0, deadline, personal }) {
-    const me = this.requireMe();
-    if (!personal) this.requireParent();
-    this.data.goals.push({ id: uid(), member_id: personal ? me.id : null, name, target: +target, saved: +saved, deadline });
-    await this.save();
-  }
-  editableGoal(id) {
-    const me = this.requireMe(), g = this.data.goals.find((x) => x.id === id);
-    if (!g) throw new Error("Goal not found.");
-    if (me.role !== "parent" && g.member_id !== me.id) throw new Forbidden(g.member_id ? "This is someone else's goal." : "Only parents can change family goals.");
-    return g;
-  }
-  async addToGoal(id, amount) { const g = this.editableGoal(id); g.saved = Math.max(0, g.saved + +amount); await this.save(); }
-  async deleteGoal(id) { this.editableGoal(id); this.data.goals = this.data.goals.filter((g) => g.id !== id); await this.save(); }
-
-  async addPlan({ name, amount, date }) {
-    this.data.plans.push({ id: uid(), member_id: this.requireMe().id, name, amount: +amount, date });
-    await this.save();
-  }
-  async deletePlan(id) { this.requireMe(); this.data.plans = this.data.plans.filter((p) => p.id !== id); await this.save(); }
+  // ---------------------------------------------------------------- postponed, settings, needs/wants
 
   async postpone(item) {
-    const me = this.requireMe();
     const remind = addMonths(todayStr().slice(0, 8) + "01", 1);
-    this.data.postponed.unshift({ id: uid(), member_id: me.id, created_at: todayStr(), remind_on: remind, status: "waiting", ...item });
+    this.data.postponed.unshift({ id: uid(), created_at: todayStr(), remind_on: remind, status: "waiting", ...item });
     await this.save();
     return remind;
   }
-  async setPostponedStatus(id, status) { this.requireMe(); const p = this.data.postponed.find((x) => x.id === id); if (p) p.status = status; await this.save(); }
 
-  async saveSetup(items) {
-    this.requireParent();
-    this.data.family.needs_wants = Object.fromEntries(items.map((i) => [i.category, { kind: i.kind, limit: i.kind === "want" ? i.monthly_limit : null }]));
-    this.data.family.setup_done = true;
-    await this.save();
-  }
-  limits() { return Object.fromEntries(Object.entries(this.data.family.needs_wants).filter(([, v]) => v.kind === "want" && v.limit != null).map(([c, v]) => [c, v.limit])); }
-  kindOf(category) {
-    const set = this.data.family.needs_wants[category];
-    if (set) return set.kind;
-    return this.models.needs.has(category) ? "need" : this.models.wants.has(category) ? "want" : "other";
+  async setPostponedStatus(id, status) {
+    const item = this.data.postponed.find((i) => i.id === id);
+    if (item) { item.status = status; await this.save(); }
   }
 
-  async setAllowance(memberId, amount, period) {
-    this.requireParent();
-    const m = this.data.members.find((x) => x.id === memberId);
-    Object.assign(m, { allowance_amount: +amount, allowance_period: period });
+  async addGoal({ name, target, saved = 0, deadline }) {
+    target = Number(target); saved = Number(saved) || 0;
+    if (!String(name || "").trim()) throw new Error("Name the goal.");
+    if (!(target > 0)) throw new Error("Enter a target above $0.");
+    if (!deadline || deadline <= todayStr()) throw new Error("Pick a date in the future.");
+    this.data.goals.push({ id: uid(), name: name.trim(), target, saved, deadline });
     await this.save();
   }
-  async payAllowance(memberId, channel = "internal") {
-    this.requireParent();
-    const teen = this.data.members.find((x) => x.id === memberId);
-    if (!teen?.allowance_amount) throw new Error("Set the allowance amount first.");
-    const today = todayStr(), stamp = uid(), me = this.me;
-    this.data.transactions.push(
-      { id: `allow-in-${stamp}`, date: today, amount: teen.allowance_amount, description: `ALLOWANCE FROM ${me.name.toUpperCase()}`, member_id: teen.id, category: "income", category_source: "user", source: "allowance", channel },
-      { id: `allow-out-${stamp}`, date: today, amount: -teen.allowance_amount, description: `ALLOWANCE TO ${teen.name.toUpperCase()}`, member_id: me.id, category: "transfer", category_source: "user", source: "allowance", channel });
-    await this.save();
-  }
-  async setPaypalEmail(memberId, email) {
-    const me = this.requireMe();
-    if (memberId !== me.id) this.requireParent();
-    this.data.members.find((x) => x.id === memberId).paypal_email = email.trim().toLowerCase() || null;
-    await this.save();
-  }
+
+  async deleteGoal(id) { this.data.goals = this.data.goals.filter((g) => g.id !== id); await this.save(); }
+
   async setSettings(values) { this.data.settings = { ...this.data.settings, ...values }; await this.save(); }
+
+  limits() { return {}; }
+  kindOf(category) { return this.models.needs.has(category) ? "need" : this.models.wants.has(category) ? "want" : "other"; }
 
   // ---------------------------------------------------------------- demo family (the Carters)
 
   async loadDemo(demo, today = todayStr()) {
-    const shift = monthIndex(today) - monthIndex(`${demo.anchor_month}-01`);
-    await this.createFamily(demo.family_name, demo.members.map((m) => ({ name: m.name, role: m.role, pin: demo.pins[m.key], key: m.key, allowance: m.allowance })));
+    const existing = await backend.get(await familyKey(DEMO_PASSWORD));
+    if (existing) { await this.unlock(DEMO_PASSWORD); return; }
+    await this.createFamily(demo.family_name, DEMO_PASSWORD, 2);
     this.data.family.is_demo = true;
-    const ids = Object.fromEntries(this.data.members.map((m) => [m.key, m.id]));
-    const items = demo.transactions.map((t) => ({ ...t, date: addMonths(t.date, shift), member_id: ids[t.member],
+    const shift = monthIndex(today) - monthIndex(`${demo.anchor_month}-01`);
+    const items = demo.transactions.map((t) => ({ ...t, date: addMonths(t.date, shift),
       category: t.source === "allowance" ? "income" : undefined, category_source: t.source === "allowance" ? "user" : undefined }))
       .filter((t) => t.date <= today);
-    this.data.transactions = this.categorize(items).sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    this.data.transactions = this.categorize(items).sort(byDate);
     for (const [text, category] of demo.seed_corrections) this.applyCorrection(text, category);
-    for (const g of demo.family_goals) this.data.goals.push({ id: uid(), member_id: null, ...g });
-    for (const [key, goals] of Object.entries(demo.personal_goals)) for (const g of goals) this.data.goals.push({ id: uid(), member_id: ids[key], ...g });
-    for (const p of demo.plans) this.data.plans.push({ id: uid(), member_id: p.member ? ids[p.member] : null, name: p.name, amount: p.amount, date: addDays(today, p.days_ahead) });
+    for (const g of demo.family_goals) this.data.goals.push({ id: uid(), ...g });
+    for (const p of demo.plans) this.data.plans.push({ id: uid(), name: p.name, amount: p.amount, date: addDays(today, p.days_ahead) });
     await this.save();
   }
 }
