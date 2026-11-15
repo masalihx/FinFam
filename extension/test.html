@@ -154,6 +154,9 @@ const fam = pp.familyPayments(shop, who);
 check("PayPal import: only this person's payments, spending negative, refunds positive",
   fam.length === 2 && fam[0].amount === -42.5 && fam[0].description === "PAYPAL *Trader Joe's groceries" && fam[1].amount === 10 && fam[0].date === "2026-11-10", JSON.stringify(fam));
 
+const own = pp.ownPayments(shop);
+check("PayPal import when the shop account itself is connected: whole history, signs as they are", own.length === 3 && own[0].amount === 42.5 && own[2].amount === -10, JSON.stringify(own));
+
 const failed = results.filter((r) => !r.ok);
 document.getElementById("out").innerHTML = `<p class="${failed.length ? "bad" : "ok"}"><b>${results.length - failed.length}/${results.length} passed</b></p>` +
   results.map((r) => `<div class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.name}${r.ok ? "" : `<pre>${r.detail}</pre>`}</div>`).join("");

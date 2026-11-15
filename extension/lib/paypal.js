@@ -52,6 +52,15 @@ function describe(t) {
   return `PAYPAL *${items[0]?.item_name || info.transaction_subject || info.transaction_note || "Payment"}`;
 }
 
+// The connected account IS our app's own PayPal account: PayPal lets us read its whole history, signs as they are.
+export function ownPayments(details) {
+  return details.map((t) => {
+    const info = t.transaction_info || {};
+    return { id: `pp-${info.transaction_id}`, date: (info.transaction_initiation_date || "").slice(0, 10),
+      amount: Number(info.transaction_amount?.value || 0), description: describe(t), channel: "online" };
+  }).filter((t) => t.date && t.amount);
+}
+
 // Our shop's history -> this person's payments. The shop received money = the family spent it (sign flips).
 export function familyPayments(details, who) {
   return details.filter((t) => {
@@ -116,7 +125,10 @@ export async function syncPaypal(store, days = 90) {
     }
     start = chunkEnd;
   }
-  const items = familyPayments(details, { email: s.paypal_email, payer_id: s.paypal_payer_id });
+  const shop = await fetch(`${API}/v1/identity/oauth2/userinfo?schema=paypalv1.1`, { headers: { Authorization: `Bearer ${tok}` } })
+    .then((r) => (r.ok ? r.json() : {})).then(profileOf).catch(() => ({ email: "" }));
+  const items = shop.email && shop.email === s.paypal_email ? ownPayments(details)
+    : familyPayments(details, { email: s.paypal_email, payer_id: s.paypal_payer_id });
   const imported = await store.addTransactions(items, "paypal");
   await store.setSettings({ paypal_synced_at: new Date().toISOString().slice(0, 16).replace("T", " ") });
   return { found: items.length, imported };
