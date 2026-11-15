@@ -4,57 +4,57 @@
     "families": 83,
     "harmful_share": 0.526,
     "months": "2026-04..2026-09",
-    "verdict_not_worth_it": 1125,
-    "verdict_think": 410,
+    "verdict_not_worth_it": 696,
+    "verdict_think": 855,
     "not_in_backtest": "market price and goals (bank lines have no product title; dataset has no goals)",
     "overspend_definition": "category month total > 1.10 x usual level"
   },
   "same_number_of_warnings": {
     "rule_50_30_20": {
-      "postponed_purchases": 1125,
-      "postponed_share": 0.279,
-      "precision": 0.588,
-      "recall": 0.312,
-      "f1": 0.408,
-      "overspend_avoided_usd": 122177.15,
-      "avoided_per_family_month_usd": 278.94,
-      "false_alarms": 463
+      "postponed_purchases": 696,
+      "postponed_share": 0.173,
+      "precision": 0.632,
+      "recall": 0.207,
+      "f1": 0.312,
+      "overspend_avoided_usd": 88014.75,
+      "avoided_per_family_month_usd": 200.95,
+      "false_alarms": 256
     },
     "proportion": {
-      "postponed_purchases": 1125,
-      "postponed_share": 0.279,
-      "precision": 0.81,
-      "recall": 0.429,
-      "f1": 0.561,
-      "overspend_avoided_usd": 135123.08,
-      "avoided_per_family_month_usd": 308.5,
-      "false_alarms": 214
+      "postponed_purchases": 696,
+      "postponed_share": 0.173,
+      "precision": 0.819,
+      "recall": 0.268,
+      "f1": 0.404,
+      "overspend_avoided_usd": 101514.27,
+      "avoided_per_family_month_usd": 231.77,
+      "false_alarms": 126
     },
     "overspend_model_only": {
-      "postponed_purchases": 1125,
-      "postponed_share": 0.279,
-      "precision": 0.969,
-      "recall": 0.513,
-      "f1": 0.671,
-      "overspend_avoided_usd": 152397.25,
-      "avoided_per_family_month_usd": 347.94,
-      "false_alarms": 35
+      "postponed_purchases": 696,
+      "postponed_share": 0.173,
+      "precision": 0.994,
+      "recall": 0.326,
+      "f1": 0.491,
+      "overspend_avoided_usd": 125355.28,
+      "avoided_per_family_month_usd": 286.2,
+      "false_alarms": 4
     },
     "verdict": {
-      "postponed_purchases": 1125,
-      "postponed_share": 0.279,
-      "precision": 0.781,
-      "recall": 0.414,
-      "f1": 0.541,
-      "overspend_avoided_usd": 154922.66,
-      "avoided_per_family_month_usd": 353.7,
-      "false_alarms": 246
+      "postponed_purchases": 696,
+      "postponed_share": 0.173,
+      "precision": 0.661,
+      "recall": 0.217,
+      "f1": 0.326,
+      "overspend_avoided_usd": 124911.37,
+      "avoided_per_family_month_usd": 285.19,
+      "false_alarms": 236
     }
   },
   "verdict_reasons": {
-    "high_risk": 869,
-    "above_usual_price": 478,
-    "both": 222
+    "high_risk": 337,
+    "above_usual_price": 486,
+    "both": 127
   },
   "error_examples": {
     "not_worth_it_but_fine": [
@@ -91,14 +91,14 @@
     ],
     "buy_but_harmful": [
       {
-        "customer_id": "C001587",
-        "transaction_date": "2026-06-25T00:00:00.000",
+        "customer_id": "C001464",
+        "transaction_date": "2026-08-09T00:00:00.000",
         "label": "shopping",
-        "price": 493.39,
-        "description": "CHECKCARD 0625 ETSY.COM BROOKLYN NY 20596493450549095212924",
-        "risk": 0.054989147,
-        "budget": 2932.075,
-        "total": 6270.19
+        "price": 542.26,
+        "description": "AMAZON MKTPL*LFGJ2Y2H3 Amzn.com/bill WA",
+        "risk": 0.3550744223,
+        "budget": 3128.49,
+        "total": 9275.07
       },
       {
         "customer_id": "C001587",

@@ -5,166 +5,89 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>FinPilot</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com/3.4.5"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
-<body class="bg-slate-50 text-slate-800">
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-20">
-    <div class="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-      <div class="flex items-center gap-2">
-        <div class="logo">F</div>
-        <div>
-          <div class="font-semibold leading-tight">FinPilot</div>
-          <div class="text-xs text-slate-500 leading-tight" id="family-name">Family money copilot</div>
+<body>
+  <!-- Signed out -->
+  <div id="auth" class="hidden min-h-screen grid lg:grid-cols-2">
+    <section class="auth-hero hidden lg:flex flex-col justify-between p-12 text-white">
+      <div class="flex items-center gap-3"><div class="logo logo-light">F</div><span class="text-xl font-bold">FinPilot</span></div>
+      <div>
+        <h1 class="text-4xl font-extrabold leading-tight">The family money copilot that stops the purchase that would break your goals&nbsp;&mdash; before you click&nbsp;Buy.</h1>
+        <ul class="mt-8 space-y-3 text-teal-50">
+          <li>&#10003; One room for parents and teens: shared bank, personal spaces</li>
+          <li>&#10003; Upcoming bills and month-end risk, forecast by ML</li>
+          <li>&#10003; On any shop page: Buy, Think about it or Not worth it &mdash; and a fair price for you</li>
+        </ul>
+      </div>
+      <p class="text-sm text-teal-100">This project is a prototype and is not financial advice.</p>
+    </section>
+    <section class="flex items-center justify-center p-6">
+      <div class="w-full max-w-md">
+        <div class="lg:hidden flex items-center gap-3 mb-8"><div class="logo">F</div><span class="text-xl font-bold">FinPilot</span></div>
+        <div id="auth-card"></div>
+        <div class="mt-8">
+          <div class="text-xs font-semibold uppercase tracking-wide text-slate-500">Or try the demo family</div>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3" id="demo-people"></div>
+          <p class="text-xs text-slate-500 mt-3">The Carters: synthetic bank data from an open dataset (Misata, CC BY 4.0) plus generated teen spending.</p>
         </div>
       </div>
-      <nav class="hidden md:flex gap-1" id="nav">
-        <a href="#dashboard" class="nav-link">Overview</a>
-        <a href="#goals" class="nav-link">Goals</a>
-        <a href="#postponed" class="nav-link">Postponed</a>
-        <a href="#transactions" class="nav-link">Transactions</a>
-        <a href="#check" class="nav-link">Check a purchase</a>
-      </nav>
-      <div class="flex items-center gap-2 text-xs" id="sources"></div>
+    </section>
+  </div>
+
+  <!-- Signed in -->
+  <div id="app" class="hidden min-h-screen lg:flex">
+    <aside id="sidebar" class="sidebar">
+      <div class="flex items-center justify-between px-5 h-16">
+        <div class="flex items-center gap-2"><div class="logo">F</div><span class="font-bold text-lg">FinPilot</span></div>
+        <button class="lg:hidden text-2xl text-slate-500" id="menu-close" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="px-5 pb-4">
+        <div class="text-sm font-semibold" id="room-name"></div>
+        <button class="room-code" id="room-code" title="Copy invite code"></button>
+      </div>
+      <nav class="px-3 space-y-0.5" id="nav"></nav>
+      <div class="mt-auto p-4 border-t border-slate-200">
+        <div class="flex items-center gap-3">
+          <div class="avatar" id="me-avatar"></div>
+          <div class="min-w-0 flex-1"><div class="font-medium truncate" id="me-name"></div><div class="text-xs text-slate-500" id="me-role"></div></div>
+          <button class="btn-icon" id="logout" title="Log out">&#x21AA;</button>
+        </div>
+      </div>
+    </aside>
+    <div class="flex-1 min-w-0">
+      <header class="topbar lg:hidden">
+        <button class="text-2xl" id="menu-open" aria-label="Open menu">&#9776;</button>
+        <div class="flex items-center gap-2"><div class="logo logo-sm">F</div><span class="font-bold">FinPilot</span></div>
+        <div class="avatar avatar-sm" id="me-avatar-sm"></div>
+      </header>
+      <main class="max-w-6xl mx-auto px-4 lg:px-8 py-6 lg:py-8" id="view"></main>
+      <footer class="max-w-6xl mx-auto px-4 lg:px-8 pb-24 text-xs text-slate-500">
+        This project is a prototype and is not financial advice. Market prices: Amazon Products 2023 (MIT) and Gemini; prices as of 2023.
+      </footer>
     </div>
-  </header>
-
-  <main class="max-w-6xl mx-auto px-4 py-6 space-y-8">
-    <!-- Connect -->
-    <section id="connect" class="card hidden">
-      <h1 class="text-2xl font-semibold">Connect your family's money</h1>
-      <p class="text-slate-600 mt-1">FinPilot learns your usual spending, forecasts overspending and protects your goals, right where you shop.</p>
-      <div class="grid md:grid-cols-2 gap-4 mt-5">
-        <button class="source-btn" id="btn-paypal">
-          <div class="text-lg font-semibold">PayPal <span class="badge-blue">Sandbox</span></div>
-          <div class="text-sm text-slate-500">Import transactions from your PayPal developer test account.</div>
-        </button>
-        <button class="source-btn" id="btn-demo">
-          <div class="text-lg font-semibold">Demo family</div>
-          <div class="text-sm text-slate-500">Two years of a synthetic family's bank data (2 kids, $117,700/year).</div>
-        </button>
-      </div>
-      <p class="text-sm mt-3" id="connect-msg"></p>
-    </section>
-
-    <!-- Dashboard -->
-    <section id="dashboard" class="hidden space-y-4">
-      <div class="flex items-end justify-between flex-wrap gap-2">
-        <div>
-          <h2 class="section-title">This month</h2>
-          <p class="text-slate-500 text-sm" id="month-label"></p>
-        </div>
-        <div class="flex gap-2">
-          <button class="btn-ghost" id="btn-refresh-paypal">Sync PayPal</button>
-          <button class="btn-ghost" id="btn-reload-demo">Reload demo</button>
-        </div>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="kpis"></div>
-      <div class="grid lg:grid-cols-3 gap-4">
-        <div class="card lg:col-span-2">
-          <div class="flex items-center justify-between">
-            <h3 class="font-semibold">Spending by category</h3>
-            <span class="text-xs text-slate-500">Risk = chance of ending the month above your usual level (ML forecast)</span>
-          </div>
-          <div class="mt-3 space-y-3" id="categories"></div>
-        </div>
-        <div class="card">
-          <h3 class="font-semibold">Last 6 months</h3>
-          <div class="h-72 mt-3"><canvas id="trend"></canvas></div>
-          <div class="mt-3 text-sm text-slate-600" id="other-spending"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Goals -->
-    <section id="goals" class="hidden space-y-4">
-      <div class="flex items-end justify-between">
-        <div>
-          <h2 class="section-title">Goals</h2>
-          <p class="text-slate-500 text-sm" id="free-cash-label"></p>
-        </div>
-        <button class="btn-primary" id="btn-add-goal">+ New goal</button>
-      </div>
-      <form id="goal-form" class="card hidden grid md:grid-cols-5 gap-3 items-end">
-        <label class="field md:col-span-2"><span>Goal</span><input name="name" required placeholder="Kids' college fund"></label>
-        <label class="field"><span>Target, $</span><input name="target" type="number" min="1" step="1" required></label>
-        <label class="field"><span>Saved, $</span><input name="saved" type="number" min="0" step="1" value="0"></label>
-        <label class="field"><span>Deadline</span><input name="deadline" type="date" required></label>
-        <div class="md:col-span-5 flex gap-2 justify-end">
-          <button type="button" class="btn-ghost" id="btn-cancel-goal">Cancel</button>
-          <button class="btn-primary">Save goal</button>
-        </div>
-      </form>
-      <div class="grid md:grid-cols-2 gap-4" id="goal-list"></div>
-    </section>
-
-    <!-- Postponed -->
-    <section id="postponed" class="hidden space-y-4">
-      <div>
-        <h2 class="section-title">Postponed purchases</h2>
-        <p class="text-slate-500 text-sm" id="postponed-label">Things you decided to wait on, from the browser extension.</p>
-      </div>
-      <div class="card" id="postponed-list"></div>
-    </section>
-
-    <!-- Transactions -->
-    <section id="transactions" class="hidden space-y-4">
-      <div class="flex items-end justify-between flex-wrap gap-2">
-        <div>
-          <h2 class="section-title">Transactions</h2>
-          <p class="text-slate-500 text-sm">Categories are set by the AI. Fix one, and FinPilot fixes every transaction from that merchant and learns from it.</p>
-        </div>
-        <select id="tx-filter" class="select"></select>
-      </div>
-      <div class="card p-0 overflow-x-auto">
-        <table class="w-full text-sm">
-          <thead class="text-left text-slate-500 border-b border-slate-200">
-            <tr><th class="p-3">Date</th><th class="p-3">Description</th><th class="p-3 text-right">Amount</th><th class="p-3">Category</th></tr>
-          </thead>
-          <tbody id="tx-body"></tbody>
-        </table>
-      </div>
-      <p class="text-sm text-slate-500" id="tx-msg"></p>
-    </section>
-
-    <!-- Check a purchase -->
-    <section id="check" class="hidden space-y-4">
-      <div>
-        <h2 class="section-title">Check a purchase</h2>
-        <p class="text-slate-500 text-sm">The same check the browser extension runs on any product page.</p>
-      </div>
-      <form id="check-form" class="card grid md:grid-cols-6 gap-3 items-end">
-        <label class="field md:col-span-3"><span>Product</span><input name="title" value="Sony WH-1000XM5 Wireless Headphones"></label>
-        <label class="field"><span>Price, $</span><input name="price" type="number" min="1" step="0.01" value="348" required></label>
-        <label class="field md:col-span-2"><span>Store link</span><input name="url" value="https://www.amazon.com/dp/B09XS7JWHH"></label>
-        <div class="md:col-span-6 flex justify-end"><button class="btn-primary">Check</button></div>
-      </form>
-      <div id="check-result"></div>
-    </section>
-  </main>
-
-  <footer class="max-w-6xl mx-auto px-4 pb-10 text-xs text-slate-500">
-    This project is a prototype and is not financial advice. Data: synthetic families (Misata, CC BY 4.0) and PayPal Sandbox test accounts.
-  </footer>
+  </div>
 
   <!-- Assistant -->
-  <button id="chat-toggle" class="chat-toggle" aria-label="Open assistant">💬</button>
-  <aside id="chat" class="chat hidden">
-    <div class="flex items-center justify-between p-3 border-b border-slate-200">
-      <div><div class="font-semibold">FinPilot assistant</div><div class="text-xs text-slate-500">Numbers come from your data, never invented</div></div>
-      <button id="chat-close" class="text-slate-400 hover:text-slate-700" aria-label="Close">✕</button>
+  <button id="chat-toggle" class="chat-toggle hidden" aria-label="Open assistant"><span>&#10022;</span> Ask FinPilot</button>
+  <aside id="chat" class="chat hidden" aria-label="Assistant">
+    <div class="flex items-center justify-between px-4 py-3 border-b border-slate-200">
+      <div><div class="font-semibold">FinPilot assistant</div><div class="text-xs text-slate-500">Numbers come from your family's data</div></div>
+      <button id="chat-close" class="btn-icon" aria-label="Close">&times;</button>
     </div>
-    <div id="chat-log" class="flex-1 overflow-y-auto p-3 space-y-2 text-sm"></div>
-    <div class="px-3 pb-2 flex flex-wrap gap-1" id="chat-suggestions"></div>
+    <div id="chat-log" class="flex-1 overflow-y-auto p-4 space-y-2 text-sm"></div>
+    <div class="px-4 pb-2 flex flex-wrap gap-1" id="chat-suggestions"></div>
     <form id="chat-form" class="p-3 border-t border-slate-200 flex gap-2">
-      <input id="chat-input" class="flex-1 input" placeholder="Ask about your money…" autocomplete="off">
-      <button class="btn-primary">Send</button>
+      <input id="chat-input" class="input flex-1" placeholder="Ask about your money..." autocomplete="off">
+      <button class="btn btn-primary">Send</button>
     </form>
   </aside>
 
+  <div id="modal" class="modal hidden"><div class="modal-card" id="modal-card"></div></div>
   <div id="toast" class="toast hidden"></div>
-  <script src="/static/app.js"></script>
+  <script src="/static/app.js?v=3"></script>
 </body>
 </html>
