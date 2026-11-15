@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FinPilot card test page</title>
+<!-- Developer page: a fake product page that runs the on-page card with the built-in engine (no extension needed).
+     Open with ?memory&title=...&price=... Not used by the extension itself. -->
+<style>body{font:15px system-ui;margin:24px;color:#0f172a;background:#fff} .p{max-width:520px} .price{font-size:28px;font-weight:700}</style>
+</head>
+<body>
+<div class="p" itemscope itemtype="https://schema.org/Product">
+  <p style="color:#64748b;font-size:13px">Test product page for the FinPilot card</p>
+  <h1 itemprop="name" id="name"></h1>
+  <div class="price">$<span itemprop="price" id="price"></span></div>
+</div>
+<script type="module">
+import { loadModels } from "./lib/ml.js";
+import { MarketIndex } from "./lib/market.js";
+import { Store } from "./lib/store.js";
+import { checkPurchase } from "./lib/verdict.js";
+
+const q = new URLSearchParams(location.search);
+const title = q.get("title") || "Sony WH-1000XM5 Wireless Noise Canceling Headphones";
+document.getElementById("name").textContent = title;
+document.getElementById("price").textContent = q.get("price") || "348.00";
+document.title = title;
+
+const today = "2026-11-15";
+const models = await loadModels("./");
+const market = new MarketIndex(await (await fetch("./models/price_index.json")).json());
+const store = new Store(models);
+await store.loadDemo(await (await fetch("./data/demo_family.json")).json(), today);
+const app = { models, market, store, today };
+
+// Stand-in for the extension's background worker.
+window.chrome = window.chrome || {};
+chrome.runtime = {
+  sendMessage(msg, cb) {
+    setTimeout(async () => {
+      try {
+        if (msg.type === "check") cb({ ok: true, data: checkPurchase(app, msg.product) });
+        else if (msg.type === "postpone") cb({ ok: true, data: { remind_on: await store.postpone(msg.product) } });
+        else cb({ ok: true, data: {} });
+      } catch (e) { cb({ ok: false, error: e.message }); }
+    }, 50);
+  },
+  onMessage: { addListener() {} },
+};
+for (const src of ["detect.js", "content.js"]) {
+  await new Promise((r) => { const s = document.createElement("script"); s.src = src; s.onload = r; document.body.append(s); });
+}
+</script>
+</body>
+</html>

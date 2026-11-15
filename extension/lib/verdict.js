@@ -25,7 +25,7 @@ const SITE_CATEGORIES = {
 const TITLE_KEYWORDS = {
   education_childcare: ["textbook", "school supplies", "backpack for school", "calculator", "notebook", "pencil", "tuition", "course"],
   health: ["vitamin", "supplement", "medicine", "first aid", "thermometer", "allergy", "pain relief"],
-  groceries: ["grocery", "snack", "coffee beans", "cereal", "pantry", "beverage", "organic food"],
+  groceries: ["grocery", "groceries", "snack", "coffee beans", "cereal", "pantry", "beverage", "organic food"],
   entertainment: ["ticket", "concert", "festival", "game pass", "video game", "playstation", "xbox", "nintendo", "movie"],
   travel: ["flight", "hotel", "airfare", "vacation package"],
   personal_care: ["shampoo", "skincare", "makeup", "cosmetic", "perfume", "razor"],
@@ -123,6 +123,7 @@ export function checkPurchase(app, { title = "", price, url = "", category = nul
     category: cat, category_name: name, kind, risk_before: before?.p ?? null, risk_after: after?.p ?? null,
     spent_this_month: before?.row.spent_to_date ?? null, budget: before?.row.budget ?? null,
     left_this_month: before ? before.row.budget - before.row.spent_to_date : null, days_left: daysInMonth(y, m) - dayOf(today),
+    usual_rest_of_month: before ? before.row.hist_after_day_ratio * before.row.budget : null,
     market, market_unclear: marketUnclear && { low: marketUnclear.low, high: marketUnclear.high }, reasonable_price: reasonable, no_room_this_month: !!before && !isNeed && reasonable === null,
     next_month_starts: firstOfMonth(monthIndex(today) + 1), goal: goal?.name || null, goal_delay_days: delay, free_cash: free, title, price, url,
   };
@@ -137,15 +138,19 @@ export function explainVerdict(r) {
   let family;
   if (r.budget != null) {
     const left = r.left_this_month, days = `${r.days_left} day${r.days_left === 1 ? "" : "s"} to go`;
+    const usual = r.usual_rest_of_month >= 5 ? ` You usually spend about ${money(r.usual_rest_of_month)} more by month end.` : "";
     family = left > 0
-      ? `${r.category_name}: ${money(left)} left of your usual ${money(r.budget)} this month, ${days}.` +
-        (r.price > left ? ` This would put you ${money(r.price - left)} over.` : ` After this: ${money(left - r.price)}.`)
-      : `${r.category_name}: already ${money(-left)} over your usual ${money(r.budget)} this month, ${days}.`;
+      ? `${r.category_name}: ${money(left)} left of your usual ${money(r.budget)} this month (${days}).` +
+        (r.price > left ? ` This ${money(r.price)} would put you ${money(r.price - left)} over.` : usual)
+      : `${r.category_name}: already ${money(-left)} over your usual ${money(r.budget)} this month (${days}).`;
   } else {
     family = r.free_cash > 0 ? `Your family keeps about ${money(r.free_cash)} a month after all spending.`
       : "Your family currently spends about everything it earns.";
   }
-  const why = r.reasons.find((x) => !x.startsWith("Similar items cost") && !x.startsWith("The price is in the upper half")) || null;
+  let why = r.reasons.find((x) => !x.startsWith("Similar items cost") && !x.startsWith("The price is in the upper half")) || null;
+  if (why && /chance of going over|already likely to go over/i.test(why) && r.risk_after != null) {
+    why = `ML forecast: ${pct(r.risk_before)} → ${pct(r.risk_after)} chance to overspend on ${r.category_name} this month with this purchase.`;
+  }
   let market = null;
   if (r.market) {
     const diff = r.price / r.market.median - 1;
@@ -156,6 +161,6 @@ export function explainVerdict(r) {
     market = { average: null, text: `No close match in our price database: items with similar names cost ${money(r.market_unclear.low)}–${money(r.market_unclear.high)} (often accessories or other versions).` };
   }
   const fair = r.decision === "buy" ? null : r.reasonable_price ? `A price that fits your budget now: up to ${money(r.reasonable_price)}.`
-    : r.no_room_this_month ? `${r.category_name} is already likely to go over this month, so no extra price fits right now. A fresh month starts ${niceDate(r.next_month_starts)}.` : null;
+    : r.no_room_this_month ? `No price fits your ${r.category_name} budget this month; a fresh month starts ${niceDate(r.next_month_starts)}.` : null;
   return { family, why, market, fair };
 }
