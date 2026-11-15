@@ -41,10 +41,36 @@ export function readRedirect(responseUrl, state) {
   return q.get("code");
 }
 
+// The id_token PayPal returns with the login (openid scope) carries the same profile claims.
+export function decodeJwt(token) {
+  try {
+    const part = String(token).split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(decodeURIComponent(escape(atob(part + "=".repeat((4 - (part.length % 4)) % 4)))));
+  } catch { return null; }
+}
+
 export function profileOf(info) {
   const emails = info.emails || [];
   const email = (emails.find((e) => e.primary)?.value || emails[0]?.value || info.email || "").toLowerCase();
   return { name: info.name || [info.given_name, info.family_name].filter(Boolean).join(" ") || email, email, payer_id: info.payer_id || null };
+}
+
+async function loginProfile(tok) {
+  let last = "";
+  for (const schema of ["paypalv1.1", "openid"]) {
+    const res = await fetch(`${API}/v1/identity/oauth2/userinfo?schema=${schema}`, { headers: { Authorization: `Bearer ${tok.access_token}` } });
+    if (res.ok) {
+      const who = profileOf(await res.json());
+      if (who.email || who.payer_id) return who;
+      last = "no email in the profile";
+    } else {
+      const body = await res.json().catch(() => ({}));
+      last = `${res.status} ${body.error_description || body.message || body.name || body.error || ""}`.trim();
+    }
+  }
+  const claims = tok.id_token ? decodeJwt(tok.id_token) : null;
+  if (claims) { const who = profileOf(claims); if (who.email || who.payer_id) return who; }
+  throw new Error(`PayPal did not share the profile (${last}). In the PayPal app's Log in with PayPal settings, turn on Email and Full name, then try again.`);
 }
 
 function describe(t) {
@@ -91,10 +117,7 @@ export async function connectPaypal(store) {
   }
   const code = readRedirect(responseUrl, state);
   const tok = await post("/v1/oauth2/token", app, new URLSearchParams({ grant_type: "authorization_code", code }).toString());
-  const res = await fetch(`${API}/v1/identity/oauth2/userinfo?schema=paypalv1.1`, { headers: { Authorization: `Bearer ${tok.access_token}` } });
-  if (!res.ok) throw new Error(`PayPal did not share the profile (${res.status}).`);
-  const who = profileOf(await res.json());
-  if (!who.email && !who.payer_id) throw new Error("PayPal did not share the email. Turn on the Email attribute for Log in with PayPal.");
+  const who = await loginProfile(tok);
   await store.setSettings({ paypal_name: who.name, paypal_email: who.email, paypal_payer_id: who.payer_id,
     paypal_connected_at: new Date().toISOString().slice(0, 10), paypal_id: null, paypal_secret: null });
   return who;

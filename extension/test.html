@@ -154,6 +154,9 @@ const fam = pp.familyPayments(shop, who);
 check("PayPal import: only this person's payments, spending negative, refunds positive",
   fam.length === 2 && fam[0].amount === -42.5 && fam[0].description === "PAYPAL *Trader Joe's groceries" && fam[1].amount === 10 && fam[0].date === "2026-11-10", JSON.stringify(fam));
 
+const jwt = "x." + btoa(JSON.stringify({ sub: "u1", name: "Jane Carter", email: "Jane@Example.com", payer_id: "P1" })).replace(/=+$/, "").replace(/\+/g, "-").replace(/\//g, "_") + ".sig";
+const fromToken = pp.profileOf(pp.decodeJwt(jwt));
+check("PayPal profile from the login id_token", fromToken.email === "jane@example.com" && fromToken.name === "Jane Carter" && pp.decodeJwt("garbage") === null, JSON.stringify(fromToken));
 const own = pp.ownPayments(shop);
 check("PayPal import when the shop account itself is connected: whole history, signs as they are", own.length === 3 && own[0].amount === 42.5 && own[2].amount === -10, JSON.stringify(own));
 
