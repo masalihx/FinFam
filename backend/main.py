@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
+from backend import assistant as assistant_mod
 from backend import db, demo, finance, ml_service, paypal
 from backend.config import WEB_DIR
 from backend.finance import CATEGORY_NAMES
@@ -26,6 +27,7 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], all
 
 categorizer = ml_service.Categorizer()
 overspend = ml_service.OverspendModel()
+assistant = assistant_mod.Assistant()
 db.init()
 
 
@@ -288,6 +290,28 @@ def postponed_status(item_id: int, body: PostponedStatus):
     with db.session() as conn:
         conn.execute("UPDATE postponed SET status = ? WHERE id = ?", (body.status, item_id))
     return {"id": item_id, "status": body.status}
+
+
+# ---------- assistant ----------
+
+class ChatIn(BaseModel):
+    message: str = Field(min_length=1, max_length=500)
+    context: Optional[dict] = None  # product the extension is looking at
+
+
+@app.post("/api/chat")
+def chat(body: ChatIn):
+    with db.session() as conn:
+        df, profile, overrides, goals = load_all(conn)
+        postponed = db.rows(conn, "SELECT * FROM postponed ORDER BY created_at DESC")
+    if df.empty:
+        return {"reply": "Connect PayPal or load the demo family first, then ask me anything about your money.",
+                "intent": "help", "confidence": 1.0}
+    data = {"df": df, "state": state_for(df, profile), "overspend": overspend, "overrides": overrides,
+            "goals": goals, "postponed": postponed, "categorizer": categorizer, "today": ml_service.now()}
+    out = assistant_mod.answer(assistant, body.message, data, body.context)
+    out["disclaimer"] = DISCLAIMER
+    return out
 
 
 # ---------- website ----------

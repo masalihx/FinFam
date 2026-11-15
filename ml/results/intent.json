@@ -1,0 +1,161 @@
+{
+  "train_phrases": 346,
+  "test_questions": 43,
+  "keyword_baseline": {
+    "accuracy": 0.581,
+    "macro_f1": 0.627
+  },
+  "model": {
+    "accuracy": 0.744,
+    "macro_f1": 0.716
+  },
+  "model_errors": [
+    {
+      "text": "sum of my clothing purchases",
+      "true": "spending",
+      "predicted": "budget_left"
+    },
+    {
+      "text": "are we going to blow the grocery budget",
+      "true": "budget_left",
+      "predicted": "goals"
+    },
+    {
+      "text": "are we spending too fast this month",
+      "true": "budget_left",
+      "predicted": "spending"
+    },
+    {
+      "text": "update me on my targets",
+      "true": "goals",
+      "predicted": "spending"
+    },
+    {
+      "text": "what's eating my budget",
+      "true": "where_losing",
+      "predicted": "budget_left"
+    },
+    {
+      "text": "help me spend less",
+      "true": "where_losing",
+      "predicted": "help"
+    },
+    {
+      "text": "which category grew the most",
+      "true": "where_losing",
+      "predicted": "goals"
+    },
+    {
+      "text": "how do we cut costs",
+      "true": "where_losing",
+      "predicted": "goals"
+    },
+    {
+      "text": "things i put off buying",
+      "true": "postponed",
+      "predicted": "can_afford"
+    },
+    {
+      "text": "how much have i not spent thanks to waiting",
+      "true": "postponed",
+      "predicted": "spending"
+    },
+    {
+      "text": "good morning",
+      "true": "help",
+      "predicted": "can_afford"
+    }
+  ],
+  "keyword_errors": [
+    {
+      "text": "restaurant bill total for october",
+      "true": "spending",
+      "predicted": "help"
+    },
+    {
+      "text": "how much went on groceries recently",
+      "true": "spending",
+      "predicted": "help"
+    },
+    {
+      "text": "sum of my clothing purchases",
+      "true": "spending",
+      "predicted": "help"
+    },
+    {
+      "text": "how big were our bills this month",
+      "true": "spending",
+      "predicted": "help"
+    },
+    {
+      "text": "thinking about a $600 ipad, good idea?",
+      "true": "can_afford",
+      "predicted": "help"
+    },
+    {
+      "text": "may i purchase sneakers for 90 dollars",
+      "true": "can_afford",
+      "predicted": "help"
+    },
+    {
+      "text": "can my family pay for a $1500 vacation",
+      "true": "can_afford",
+      "predicted": "help"
+    },
+    {
+      "text": "should i order this now",
+      "true": "can_afford",
+      "predicted": "help"
+    },
+    {
+      "text": "is now a bad time for a big purchase",
+      "true": "can_afford",
+      "predicted": "help"
+    },
+    {
+      "text": "are we spending too fast this month",
+      "true": "budget_left",
+      "predicted": "spending"
+    },
+    {
+      "text": "chance i go over on entertainment",
+      "true": "budget_left",
+      "predicted": "help"
+    },
+    {
+      "text": "when do we get the new car",
+      "true": "goals",
+      "predicted": "help"
+    },
+    {
+      "text": "are we behind on saving",
+      "true": "goals",
+      "predicted": "help"
+    },
+    {
+      "text": "what's eating my budget",
+      "true": "where_losing",
+      "predicted": "budget_left"
+    },
+    {
+      "text": "which category grew the most",
+      "true": "where_losing",
+      "predicted": "help"
+    },
+    {
+      "text": "any ideas to save",
+      "true": "where_losing",
+      "predicted": "help"
+    },
+    {
+      "text": "what is wasting our money",
+      "true": "where_losing",
+      "predicted": "help"
+    },
+    {
+      "text": "things i put off buying",
+      "true": "postponed",
+      "predicted": "can_afford"
+    }
+  ]
+}
