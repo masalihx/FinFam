@@ -75,3 +75,35 @@ Overspend features for any day, recurring series, free cash, goal plans, usual p
 ## Phase 4: Ship
 ### Task 11: README, notebook, video script, push (S)
 - [ ] README describes v3 (extension-only), new numbers, Gemini-with-context evaluation
+
+---
+
+# v4 (team feedback, 07:19 ET): simpler extension, no Gemini
+
+Decisions: no Gemini at all (built-in ML only); side panel = exactly 2 parts (Advisor, Money in/out) with a
+user-connected PayPal button; one 6-character family password (letters + digits), no member profiles;
+FinAI card: verdict first, then the family's money state, then the average market price from our database.
+
+### Task 12: Market price from the database (kNN) (M)
+- [x] Similar products from Amazon Products 2023 by title (TF-IDF cosine); average/median price of neighbours
+- [x] Python evaluation vs category median and ridge on the same unseen-store test set
+- [x] Compact index exported to JSON; JS search matches Python on test titles
+
+### Task 13: Family password store (S)
+- [ ] Create family → 6-char password (letters+digits), unique on this browser, stored as salted hash
+- [ ] Unlock with password; lock; demo family password DEMO26
+- [ ] No members/roles; all checks pass on test page
+
+### Task 14: Built-in advisor without Gemini (M)
+- [ ] Remove Gemini code paths; intent model improved with more training phrases (test questions untouched)
+- [ ] Advisor answers from our tools only
+
+### Task 15: Side panel = Advisor + Money (M)
+- [ ] Advisor: month status ("left to spend" per category), ML advice cards, "Is it worth it?" check, ask box
+- [ ] Money: quick add expense/income with live ML category, list with category fix, Connect PayPal dialog (user's own keys)
+
+### Task 16: FinAI card (S)
+- [ ] Verdict first → family money state (e.g. "$X left for groceries this month") → market average from database
+- [ ] Short: at most 3 lines + buttons
+
+### Task 17: Docs and push (S)

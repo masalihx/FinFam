@@ -1,0 +1,28 @@
+{
+  "setup": {
+    "train": 66104,
+    "test": 7277,
+    "split": "by store",
+    "prices_as_of": 2023
+  },
+  "category_median": {
+    "median_abs_pct_error": 0.536,
+    "within_25pct": 0.242,
+    "range_coverage": 0.332,
+    "median_range_width_ratio": 2.0
+  },
+  "knn": {
+    "median_abs_pct_error": 0.335,
+    "within_25pct": 0.38,
+    "range_coverage": 0.481,
+    "median_range_width_ratio": 1.9,
+    "k": 10,
+    "max_features": 30000
+  },
+  "ridge_full_model": {
+    "median_abs_pct_error": 0.371,
+    "within_25pct": 0.359,
+    "range_coverage": 0.487,
+    "median_range_width_ratio": 2.16
+  }
+}

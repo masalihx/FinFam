@@ -92,6 +92,16 @@ check("headphones $348 -> not worth it, market range shown", phones.decision ===
 const calc = await checkPurchase(app, { title: "TI-84 Plus graphing calculator for school", price: 129, url: "https://www.amazon.com/dp/y" });
 check("school calculator judged as a need", calc.kind === "need" && calc.risk_after === null, `${calc.kind} ${calc.decision}`);
 
+// Task 12: market price from the database (kNN)
+const { MarketIndex } = await import("./lib/market.js");
+const t1 = performance.now();
+const market = new MarketIndex(await (await fetch("./models/price_index.json")).json());
+check("market index builds under 4 s", performance.now() - t1 < 4000, `${(performance.now() - t1).toFixed(0)} ms`);
+const mBad = market && (await (await fetch("./models/price_index.json")).json()).tests
+  .filter((t) => { const r = market.lookup(t.title); return !r || Math.abs(r.median - t.expected) > 0.01; })
+  .map((t) => `${t.title.slice(0, 40)}: ${market.lookup(t.title)?.median} vs ${t.expected}`);
+check("market median matches Python", mBad.length === 0, mBad.join("; "));
+
 const failed = results.filter((r) => !r.ok);
 document.getElementById("out").innerHTML = `<p class="${failed.length ? "bad" : "ok"}"><b>${results.length - failed.length}/${results.length} passed</b></p>` +
   results.map((r) => `<div class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.name}${r.ok ? "" : `<pre>${r.detail}</pre>`}</div>`).join("");
