@@ -1,0 +1,340 @@
+{
+ "model": "gemini-3.5-flash-lite",
+ "questions": 47,
+ "accuracy": {
+  "gemini_taught": 0.915,
+  "gemini_zero_shot": 0.894,
+  "intent_model": 0.723
+ },
+ "rows": [
+  {
+   "question": "what did eating out cost us last month?",
+   "expected": "get_spending",
+   "taught": "get_spending",
+   "zero_shot": "get_spending",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "restaurant bill total for october",
+   "expected": "get_spending",
+   "taught": "get_spending",
+   "zero_shot": "get_spending",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "how much went on groceries recently",
+   "expected": "get_spending",
+   "taught": "get_spending",
+   "zero_shot": "get_spending",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "tell me my uber costs",
+   "expected": "get_spending",
+   "taught": "get_spending",
+   "zero_shot": "get_spending",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "money spent on netflix and stuff",
+   "expected": "get_spending",
+   "taught": "get_upcoming",
+   "zero_shot": "get_spending",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "our entertainment costs in september",
+   "expected": "get_spending",
+   "taught": "get_spending",
+   "zero_shot": "get_spending",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "sum of my clothing purchases",
+   "expected": "get_spending",
+   "taught": "get_spending",
+   "zero_shot": "get_spending",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "how big were our bills this month",
+   "expected": "get_spending",
+   "taught": "get_upcoming",
+   "zero_shot": "get_spending",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "is a $250 coat affordable right now",
+   "expected": "check_purchase",
+   "taught": "check_purchase",
+   "zero_shot": "check_purchase",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "thinking about a $600 ipad, good idea?",
+   "expected": "check_purchase",
+   "taught": "check_purchase",
+   "zero_shot": "check_purchase",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "may i purchase sneakers for 90 dollars",
+   "expected": "check_purchase",
+   "taught": "check_purchase",
+   "zero_shot": "check_purchase",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "would buying a new phone hurt us",
+   "expected": "check_purchase",
+   "taught": "check_purchase",
+   "zero_shot": "get_month_summary",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "can my family pay for a $1500 vacation",
+   "expected": "check_purchase",
+   "taught": "check_purchase",
+   "zero_shot": "get_month_summary",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "should i order this now",
+   "expected": "check_purchase",
+   "taught": null,
+   "zero_shot": null,
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "is now a bad time for a big purchase",
+   "expected": "check_purchase",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "worth buying a drone for $400?",
+   "expected": "check_purchase",
+   "taught": "check_purchase",
+   "zero_shot": "check_purchase",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "how much shopping money do i have left",
+   "expected": "get_month_summary",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "are we going to blow the grocery budget",
+   "expected": "get_month_summary",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "is my dining budget ok",
+   "expected": "get_month_summary",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "remaining budget for transport",
+   "expected": "get_month_summary",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "are we spending too fast this month",
+   "expected": "get_month_summary",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "chance i go over on entertainment",
+   "expected": "get_month_summary",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "how close am i to my limit for shopping",
+   "expected": "get_month_summary",
+   "taught": "get_month_summary",
+   "zero_shot": "get_month_summary",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "is the college fund on schedule",
+   "expected": "get_goals",
+   "taught": "get_goals",
+   "zero_shot": "get_goals",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "when do we get the new car",
+   "expected": "get_goals",
+   "taught": "get_goals",
+   "zero_shot": "get_goals",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "monthly amount needed for our savings targets",
+   "expected": "get_goals",
+   "taught": "get_goals",
+   "zero_shot": "get_goals",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "are we behind on saving",
+   "expected": "get_goals",
+   "taught": "get_goals",
+   "zero_shot": "get_goals",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "how far along is the house fund",
+   "expected": "get_goals",
+   "taught": "get_goals",
+   "zero_shot": "get_goals",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "update me on my targets",
+   "expected": "get_goals",
+   "taught": "get_goals",
+   "zero_shot": "get_goals",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "what's eating my budget",
+   "expected": "where_losing_money",
+   "taught": "where_losing_money",
+   "zero_shot": "where_losing_money",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "help me spend less",
+   "expected": "where_losing_money",
+   "taught": "where_losing_money",
+   "zero_shot": "get_month_summary",
+   "intent_model": null
+  },
+  {
+   "question": "which category grew the most",
+   "expected": "where_losing_money",
+   "taught": "where_losing_money",
+   "zero_shot": "where_losing_money",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "how do we cut costs",
+   "expected": "where_losing_money",
+   "taught": "where_losing_money",
+   "zero_shot": "where_losing_money",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "any ideas to save",
+   "expected": "where_losing_money",
+   "taught": "where_losing_money",
+   "zero_shot": "where_losing_money",
+   "intent_model": "where_losing_money"
+  },
+  {
+   "question": "what is wasting our money",
+   "expected": "where_losing_money",
+   "taught": "where_losing_money",
+   "zero_shot": "where_losing_money",
+   "intent_model": "where_losing_money"
+  },
+  {
+   "question": "which items am i waiting to buy",
+   "expected": "get_postponed",
+   "taught": "get_postponed",
+   "zero_shot": "get_postponed",
+   "intent_model": "get_postponed"
+  },
+  {
+   "question": "things i put off buying",
+   "expected": "get_postponed",
+   "taught": "get_postponed",
+   "zero_shot": "get_postponed",
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "how much have i not spent thanks to waiting",
+   "expected": "get_postponed",
+   "taught": "get_postponed",
+   "zero_shot": "get_postponed",
+   "intent_model": "get_spending"
+  },
+  {
+   "question": "my delayed purchases list",
+   "expected": "get_postponed",
+   "taught": "get_postponed",
+   "zero_shot": "get_postponed",
+   "intent_model": "get_postponed"
+  },
+  {
+   "question": "which charges are about to hit our account",
+   "expected": "get_upcoming",
+   "taught": "get_upcoming",
+   "zero_shot": "get_upcoming",
+   "intent_model": "get_goals"
+  },
+  {
+   "question": "is the phone bill due soon",
+   "expected": "get_upcoming",
+   "taught": "get_upcoming",
+   "zero_shot": "get_upcoming",
+   "intent_model": "get_upcoming"
+  },
+  {
+   "question": "what do we owe in the next two weeks",
+   "expected": "get_upcoming",
+   "taught": "get_upcoming",
+   "zero_shot": "get_upcoming",
+   "intent_model": "get_upcoming"
+  },
+  {
+   "question": "calendar of payments for this month",
+   "expected": "get_upcoming",
+   "taught": "get_upcoming",
+   "zero_shot": "get_upcoming",
+   "intent_model": "get_month_summary"
+  },
+  {
+   "question": "good morning",
+   "expected": null,
+   "taught": null,
+   "zero_shot": null,
+   "intent_model": "check_purchase"
+  },
+  {
+   "question": "what are you",
+   "expected": null,
+   "taught": null,
+   "zero_shot": null,
+   "intent_model": null
+  },
+  {
+   "question": "can you explain what you do",
+   "expected": null,
+   "taught": null,
+   "zero_shot": null,
+   "intent_model": null
+  },
+  {
+   "question": "ok thanks a lot",
+   "expected": null,
+   "taught": null,
+   "zero_shot": null,
+   "intent_model": null
+  }
+ ]
+}

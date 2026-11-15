@@ -99,7 +99,13 @@ On day 5 of the month the model catches 55% of overspends (precision 62%) vs 45%
 **Categorization** (50 held-out families, macro-F1): keywords 0.650 · **compact model 0.696** · after 200 user corrections 0.836 (full model). Gemini on 200 lines: 0.833 vs our 0.646.
 
 **Assistant — does teaching Gemini through context help?** (47 separately written questions, correct tool chosen):
-GEMINI_TOOLS_ROW
+| Method | Correct tool |
+|---|---|
+| Our intent model (offline fallback, keywords baseline 0.55) | 72% |
+| Gemini 3.5 Flash-Lite + our tools, no teaching context | 89% |
+| **Gemini + our teaching context + our tools (used in FinPilot)** | **91.5%** |
+
+Teaching helps only a little (one question out of 47 — honest result); most of the gain comes from giving Gemini our tools at all. Remaining misses: “money spent on netflix and stuff” → upcoming bills instead of spending; “should I order this now” without a price → no tool.
 
 **JS port = Python:** 41/41 automated checks in `extension/test.html` (models, live features, money math, store rights, 672 verdict cases).
 
