@@ -8,7 +8,7 @@ import { $, $$, BAR, busy, closeSheet, dayLabel, esc, formData, money, pct, shee
 
 const TONE = { buy: "green", think: "amber", not_worth_it: "red" };
 const ICON = { buy: "✓", think: "?", not_worth_it: "✕" };
-const ASK_CHIPS = ["budget_left", "spending", "upcoming", "where_losing", "goals", "postponed"];
+const ASK_CHIPS = ["can_spend", "budget_left", "spending", "upcoming", "where_losing", "goals", "postponed"];
 const chat = []; // this panel session's questions and answers
 
 const marketVs = (r) => { const d = r.explain.market.diff; return Math.abs(d) < 0.05 ? "your price is about average" : `your price is ${pct(Math.abs(d))} ${d > 0 ? "above" : "below"}`; };

@@ -31,13 +31,13 @@ entertainment, the ML chance of overspending jumps from 20% to 100%, and a price
 |---|---|
 | **Family password** | Create a family → FinPilot suggests a 6-character password (or you choose one). Anyone in the family opens it with the same password. Only a salted hash is stored; each family sees only its own data. |
 | **On-page card** | On any product page (or a selected product + price, right-click **Is this worth it?**): verdict first → money left in the category this month and what the family usually spends by month end → ML risk forecast → average market price from our database → a price that fits now. **Postpone** saves it with a reminder. |
-| **Advisor** | This month (spent, income, kept), ML advice cards (category likely to go over, bills due this week, what grew last month, goals behind), **Is it worth it?** for any item, **left to spend** per category with the ML risk, questions with topic buttons, goals. |
+| **Advisor** | This month (spent, income, kept), ML advice cards (category likely to go over, bills due this week, what grew last month, goals behind), **Is it worth it?** for any item, **left to spend** per category with the ML risk, goals, and questions in plain English. **What can I buy?** answers with the largest amount per category that keeps our overspend model under its warning level; “Can I buy sneakers?” without a price uses the average price from our market database. |
 | **Money** | Add an expense or income: the ML model picks the category while you type (you can change it). History with category fixes (one fix re-labels every payment from that merchant) and delete. **Connect PayPal**: the user logs in on PayPal's own page (Log in with PayPal, Sandbox); FinPilot gets their name and email and imports their payments made through our PayPal shop for the last 90 days. |
 
 ## 3. What we added ourselves (beyond calling an API)
 - Six ML parts trained and tested by us, each against simple baselines (and against Gemini where we could).
 - A **backtest of the decision itself** in dollars, not just model metrics.
-- All models **exported from Python and ported to JavaScript**, verified number-for-number: **66 automated checks** in `extension/test.html` (incl. 672 verdict-rule cases and the market search).
+- All models **exported from Python and ported to JavaScript**, verified number-for-number: **70 automated checks** in `extension/test.html` (incl. 672 verdict-rule cases and the market search).
 - An **offline advisor**: our intent model + our money code answer questions; when the model is unsure it offers the next likely topics as buttons.
 
 ## 4. How it works
@@ -65,7 +65,7 @@ entertainment, the ML chance of overspending jumps from 20% to 100%, and a price
 | 3 | Overspend risk | Misata, 100 families × 24 months | Gradient boosting, monotonic in spending, live features for any day of the month |
 | 4 | Market price | Amazon Products 2023 (66k training products) | k nearest neighbours by title (TF-IDF cosine, k = 10): similarity-weighted median and 25–75% range |
 | 5 | Verdict | Outputs of 2–4 + family's usual prices + goals + needs/wants | Team rules (`docs/spec.md`); fitting price = highest price keeping the risk under the model's warning threshold |
-| 6 | Advisor topics | 612 template phrases (8 topics) | TF-IDF + logistic regression; unsure (p < 0.6) → 2 more topics as buttons |
+| 6 | Advisor topics | 992 template phrases (9 topics) | TF-IDF + logistic regression; unsure (p < 0.6) → 2 more topics as buttons. Answers are computed by models 2–5 |
 
 ## 5. Results (test data the models never saw)
 **Overspend risk** (train 2025, threshold on Jan–Mar 2026, **test Apr–Sep 2026**, 17,030 cases):
@@ -96,14 +96,19 @@ Next payment within ±3 days: 96% vs 84% for “last + 30 days”.
 
 **Categorization** (50 held-out families, macro-F1): keywords 0.650 · **compact model 0.696** · after 200 user corrections 0.836.
 
-**Advisor topics** (20 questions written after training and checked for leaks):
-keywords 30% · **our model 60%** · right answer *or* the right topic offered as a button **75%**.
-(The older 47-question set now overlaps with the added training phrases, so we no longer report it.)
+**Advisor topics** — model in the extension, before (v4.1) → after (v4.2: new skill “What can I buy?”, 992 instead of 612 training phrases):
+
+| Test (written before the change, never trained on) | Keywords | v4.1 model | **v4.2 model** | v4.2: right answer or right button |
+|---|---|---|---|---|
+| 40 new questions | 37.5% | 60% | **77.5%** | **87.5%** (was 75%) |
+| 20 fresh questions | 30% | 60% | **65%** | 75% (was 75%) |
+
+`ml/train_intent.py` refuses to train if a test question is in the training phrases, or nearly copied (character similarity ≥ 0.95); two pairs are close but were in the training data before the tests were written (“thank you” / “thank you so much”, 0.90). The older 47-question set overlaps the added phrases, so we no longer report it.
 
 ## 6. Where it fails (honest notes)
 - **Synthetic data.** The family bank is synthetic (Misata); the teens' spending is generated by us. Recurring-payment scores are probably optimistic.
 - **Market price by title can be fooled.** *Sony WH-1000XM5* at $348: the database has the exact model ($398) and the XM4 ($348), but cheaper Sony headphones among the 10 neighbours pull the average to $98 ("255% above"). *AirPods Pro* at $249: the nearest titles are $10 cases, so the 3× rule hides the market price. Sharper similarity weights did not help on validation (34.2% → 34.6–40%). Prices are from 2023.
-- **Advisor understands only 60% of free-text questions**: “rent date” → spending, “what's on hold” → spending. That is why the main actions are buttons and the advisor shows how it understood each question.
+- **Advisor still misses 1 in 4–5 free-text questions** (77.5% / 65%): “which category is most at risk” → where we lose money, “howdy” → spending, “anything I parked for later?” → is it worth it. The advisor shows how it understood each question and offers the next topics as buttons. A small language model could understand more, but strong ones are far too big for an extension.
 - **The “usual price” rule trades precision for dollars**: it flags expensive items even in months that end fine.
 - **Missed big purchases**: $542 on Amazon mid-month looked low-risk (36%); the month later tripled.
 - **Categorization mistakes**: credit-card interest read as Entertainment, T-Mobile as Transport — fixable with one click, and the fix spreads to the same merchant. A $1,200 PayPal "Salary" was read as Shopping (and counted as negative spending); now money that surely came in (PayPal receipts, entries marked Income) counts as income. We do not apply this to bank lines: there many shopping refunds are positive, and a general rule lowered test macro-F1 (0.6961 → 0.6953).
@@ -120,7 +125,7 @@ Family sync across devices, real bank connections (open banking), fresher price 
 4. Optional: **Money → Connect PayPal → Log in with PayPal** and log in with a PayPal **Sandbox personal** account. (Developers: this needs `extension/paypal.config.json`, made from `.env` by `python3 scripts/make_paypal_config.py`, and in the Sandbox app: *Log in with PayPal* on, Return URL `https://lakkaedhdeopfgfnpioemhplfomfgbam.chromiumapp.org/paypal`, *Transaction Search* on.)
 5. Open any product page (e.g. Amazon) — the card appears; or select a product and price → right-click → **Is this worth it?**
 
-Engine tests: serve `extension/` over http (`python3 -m http.server`) and open `test.html?memory` (66 checks) or `card-test.html?memory` (the card on a test product page).
+Engine tests: serve `extension/` over http (`python3 -m http.server`) and open `test.html?memory` (70 checks) or `card-test.html?memory` (the card on a test product page).
 Retrain and re-export the models: `pip install -r requirements.txt`, then `python ml/data_prep.py`, the `ml/train_*.py` scripts, and `python ml/export_extension.py`. Results notebook: `notebooks/FinPilot_results.ipynb`. Earlier versions are kept: website v2 in `backend/` and `web/`.
 
 ## 9. Sources

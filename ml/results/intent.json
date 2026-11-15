@@ -1,36 +1,31 @@
 {
-  "train_phrases": 612,
+  "train_phrases": 992,
   "test_questions": 47,
   "keyword_baseline": {
     "accuracy": 0.553,
-    "macro_f1": 0.587
+    "macro_f1": 0.522
   },
   "model": {
     "accuracy": 0.936,
-    "macro_f1": 0.939
+    "macro_f1": 0.835
   },
   "fresh_test": {
     "questions": 20,
     "keyword_baseline_accuracy": 0.3,
-    "model_accuracy": 0.6,
-    "model_macro_f1": 0.529,
+    "model_accuracy": 0.7,
+    "model_macro_f1": 0.615,
     "answer_or_button_right": 0.75,
-    "unsure_share": 0.45,
+    "unsure_share": 0.4,
     "errors": [
       {
-        "text": "what was our biggest expense this month",
-        "true": "spending",
-        "predicted": "where_losing"
-      },
-      {
-        "text": "how close are we to the grocery limit",
+        "text": "do we still have money for eating out this month",
         "true": "budget_left",
-        "predicted": "goals"
+        "predicted": "can_spend"
       },
       {
         "text": "what can we stop paying for",
         "true": "where_losing",
-        "predicted": "can_afford"
+        "predicted": "can_spend"
       },
       {
         "text": "which spending went up compared to normal",
@@ -51,11 +46,102 @@
         "text": "much appreciated",
         "true": "help",
         "predicted": "spending"
+      }
+    ]
+  },
+  "new_test": {
+    "questions": 40,
+    "keywords_baseline": 0.475,
+    "top1": 0.75,
+    "answer_or_button": 0.9,
+    "errors": [
+      {
+        "text": "do we have room for something fun this month",
+        "true": "can_spend",
+        "predicted": "can_afford"
       },
       {
-        "text": "what is finpilot",
+        "text": "what's my spending money",
+        "true": "can_spend",
+        "predicted": "where_losing"
+      },
+      {
+        "text": "are we going to make it to the end of the month",
+        "true": "budget_left",
+        "predicted": "goals"
+      },
+      {
+        "text": "which category is most at risk",
+        "true": "budget_left",
+        "predicted": "where_losing"
+      },
+      {
+        "text": "can we still afford the car by next year",
+        "true": "goals",
+        "predicted": "can_spend"
+      },
+      {
+        "text": "which subscriptions should we cancel",
+        "true": "where_losing",
+        "predicted": "can_afford"
+      },
+      {
+        "text": "what spending looks unusual",
+        "true": "where_losing",
+        "predicted": "spending"
+      },
+      {
+        "text": "show the stuff i decided not to buy yet",
+        "true": "postponed",
+        "predicted": "can_afford"
+      },
+      {
+        "text": "anything i parked for later?",
+        "true": "postponed",
+        "predicted": "can_afford"
+      },
+      {
+        "text": "howdy",
         "true": "help",
-        "predicted": "budget_left"
+        "predicted": "spending"
+      }
+    ]
+  },
+  "fresh_test_v42": {
+    "questions": 20,
+    "keywords_baseline": 0.3,
+    "top1": 0.7,
+    "answer_or_button": 0.75,
+    "errors": [
+      {
+        "text": "do we still have money for eating out this month",
+        "true": "budget_left",
+        "predicted": "can_spend"
+      },
+      {
+        "text": "what can we stop paying for",
+        "true": "where_losing",
+        "predicted": "can_spend"
+      },
+      {
+        "text": "which spending went up compared to normal",
+        "true": "where_losing",
+        "predicted": "spending"
+      },
+      {
+        "text": "what's on hold",
+        "true": "postponed",
+        "predicted": "spending"
+      },
+      {
+        "text": "rent date",
+        "true": "upcoming",
+        "predicted": "spending"
+      },
+      {
+        "text": "much appreciated",
+        "true": "help",
+        "predicted": "spending"
       }
     ]
   },

@@ -22,7 +22,7 @@ from sklearn.pipeline import FeatureUnion, Pipeline
 
 sys.path.insert(0, str(Path(__file__).parent))
 from categories import CATEGORIES, NEEDS, WANTS  # noqa: E402
-from intents import FRESH_TEST_QUESTIONS, INTENTS, TEST_QUESTIONS, training_phrases  # noqa: E402
+from intents import FRESH_TEST_QUESTIONS, INTENTS, NEW_TEST_QUESTIONS, TEST_QUESTIONS, training_phrases  # noqa: E402
 from overspend_features import FEATURES  # noqa: E402
 from recurring import SERIES_FEATURES  # noqa: E402
 from text_utils import normalize  # noqa: E402
@@ -106,8 +106,11 @@ def intent() -> dict:
     tt, tl = zip(*TEST_QUESTIONS)
     ft, fl = zip(*FRESH_TEST_QUESTIONS)
     f1 = f1_score(fl, model.predict(ft), labels=INTENTS, average="macro", zero_division=0)  # fresh, unseen questions
+    nt, nl = zip(*NEW_TEST_QUESTIONS)
+    new_acc = float(np.mean(model.predict(nt) == np.array(nl)))
     clf = model.named_steps["clf"]
-    return {"name": "intent", "test_macro_f1": round(f1, 4), "classes": list(clf.classes_),
+    print(f"compact intent model: new 40-question test top-1 {new_acc:.3f}, fresh 20 top-1 {float(np.mean(model.predict(ft) == np.array(fl))):.3f}")
+    return {"name": "intent", "test_macro_f1": round(f1, 4), "new_test_top1": round(new_acc, 3), "classes": list(clf.classes_),
             "features": export_union(model), "coef": [r(row) for row in clf.coef_], "intercept": r(clf.intercept_),
             "tests": [{"text": t, "expected": p} for t, p in zip(tt[:15], model.predict(tt[:15]))]}
 

@@ -1,0 +1,12 @@
+{
+  "model": "v4.1 compact intent model (in the extension before this change)",
+  "new_40": {
+    "keywords_baseline": 0.375,
+    "top1": 0.6,
+    "answer_or_button": 0.75
+  },
+  "fresh_20": {
+    "top1": 0.6,
+    "answer_or_button": 0.75
+  }
+}

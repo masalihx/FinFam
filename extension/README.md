@@ -21,7 +21,7 @@ No server and no external AI. Our ML models run in the browser; the family's dat
 | `lib/` | Engine: `ml.js`, `market.js`, `features.js`, `finance.js`, `verdict.js`, `assistant.js`, `paypal.js`, `store.js`, `dates.js`, `ui.js` |
 | `models/` | Trained models exported from Python (`ml/export_extension.py`, `ml/train_price_knn.py`) |
 | `data/` | Demo family and test fixtures |
-| `test.html` | 66 checks that the JS engine matches Python (serve the folder over http and open `test.html?memory`) |
+| `test.html` | 70 checks that the JS engine matches Python (serve the folder over http and open `test.html?memory`) |
 | `card-test.html` | Developer page: the on-page card on a test product (`?memory&title=...&price=...`) |
 
 ## Privacy

@@ -1,12 +1,13 @@
 // FinPilot advisor, fully built in (no external AI). Our intent model (TF-IDF + logistic regression)
 // decides what the question is about; our other models and code compute every number.
 // If the model is unsure, the answer also offers the next likely topics as one-tap buttons.
-import { CATEGORY_NAMES, isSpending, monthSummary, monthlyFreeCash, planGoals, upcomingRecurring } from "./finance.js";
+import { CATEGORY_NAMES, familyState, isSpending, monthSummary, monthlyFreeCash, planGoals, riskRow, upcomingRecurring } from "./finance.js";
+import { FORECAST_CATEGORIES } from "./features.js";
 import { addDays, monthIndex, monthName } from "./dates.js";
-import { checkPurchase } from "./verdict.js";
+import { checkPurchase, reasonablePrice } from "./verdict.js";
 
 export const TOPICS = {
-  spending: "What did we spend?", budget_left: "What's left this month?", upcoming: "Upcoming bills",
+  can_spend: "What can I buy?", spending: "What did we spend?", budget_left: "What's left this month?", upcoming: "Upcoming bills",
   goals: "Our goals", where_losing: "Where are we losing money?", postponed: "Postponed purchases",
   can_afford: "Is it worth it?", help: "What can you do?",
 };
@@ -14,8 +15,9 @@ const money = (x) => `$${Math.round(x).toLocaleString("en-US")}`;
 const pct = (p) => `${Math.round(p * 100)}%`;
 const CATEGORY_WORDS = {
   dining: ["dining", "restaurant", "eating out", "eat out", "coffee", "takeout", "delivery", "lunch", "dinner"],
-  groceries: ["grocer", "supermarket", "food"], shopping: ["shopping", "clothes", "amazon", "online"],
-  transportation: ["transport", "gas", "fuel", "uber", "lyft", "taxi"], entertainment: ["entertainment", "movie", "games", "concert", "ticket"],
+  groceries: ["grocer", "supermarket", "food"],
+  shopping: ["shopping", "clothes", "amazon", "online", "gift", "shoes", "sneakers", "laptop", "phone", "headphones", "electronics", "hoodie", "jacket"],
+  transportation: ["transport", "gas", "fuel", "uber", "lyft", "taxi"], entertainment: ["entertainment", "movie", "game", "concert", "ticket", "fun"],
   subscriptions: ["subscription", "netflix", "spotify", "streaming"], travel: ["travel", "vacation", "flight", "hotel"],
   health: ["health", "pharmacy", "doctor", "medicine"], personal_care: ["haircut", "salon", "gym", "beauty"],
   utilities: ["bills", "utilities", "electric", "internet", "phone"], housing: ["rent", "mortgage"],
@@ -29,6 +31,13 @@ function findMonth(text, today) {
   if (i < 0) return cur;
   const y = Number(today.slice(0, 4)), mi = y * 12 + i;
   return mi <= cur ? mi : mi - 12;
+}
+
+// The thing being bought: the question without the question words and the price.
+function itemOf(text) {
+  return text.toLowerCase().replace(/\$\s?[\d.,]+|\d[\d,]*(\.\d+)?\s?(dollars|bucks|usd)|\b\d[\d,]*(\.\d+)?\b/g, " ")
+    .replace(/\b(can|could|should|would|i|we|us|our|my|me|buy|buying|get|getting|afford|purchase|order|is|it|a|an|the|for|to|of|about|thinking|want|ok|okay|good|idea|worth|now|right|today|this|week|month|be|too|much|do|have|enough|money|yes|no|or)\b/g, " ")
+    .replace(/[?!.,]/g, " ").replace(/\s+/g, " ").trim();
 }
 
 // ------------------------------------------------------------------ answers per topic
@@ -91,15 +100,50 @@ const ANSWERS = {
       ...waiting.slice(0, 5).map((i) => `• ${i.title} ${money(i.price)} (reminder ${i.remind_on})`)].join("\n");
   },
   can_afford(app, text, context) {
-    const m = text.match(/\$\s?(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s?(?:dollars|bucks|usd)/i);
-    const price = m ? Number((m[1] || m[2]).replace(/,/g, "")) : context?.price;
+    const m = text.match(/\$\s?(\d[\d,]*(?:\.\d+)?)|(\d[\d,]*(?:\.\d+)?)\s?(?:dollars|bucks|usd)|\bfor\s+(\d[\d,]*(?:\.\d+)?)\b/i);
+    let price = m ? Number((m[1] || m[2] || m[3]).replace(/,/g, "")) : context?.price;
+    const title = context?.title || itemOf(text);
+    let estimated = null;
+    if (!price && title && app.market) {
+      const found = app.market.lookup(title);
+      if (found) { price = Math.round(found.median); estimated = found; }
+    }
     if (!price) return "Tell me the price, for example: “Can I buy sneakers for $90?”";
-    const title = context?.title || text.replace(/can i|should i|buy|get|afford|for|\$\s?[\d.,]+|\?/gi, " ").replace(/\s+/g, " ").trim();
     const r = checkPurchase(app, { title, price, url: context?.url || "" }), e = r.explain;
-    return [`${r.title_text}.`, e.family, e.why, e.market?.text, e.fair].filter(Boolean).join("\n");
+    const head = estimated ? `You didn't give a price, so I used the average for “${title}” in our database: ${money(price)} (similar items ${money(estimated.low)}–${money(estimated.high)}).` : "";
+    return [head, `${r.title_text}.`, e.family, e.why, estimated ? "" : e.market?.text, e.fair].filter(Boolean).join("\n");
+  },
+  // "What can I buy?": for each category, the largest amount that keeps our overspend model under its warning level.
+  can_spend(app, text) {
+    const s = app.store, models = app.models, tx = s.data.transactions;
+    if (!tx.length) return "Add some expenses and income first, then I can tell you what is safe to spend.";
+    const state = familyState(tx, s.data.family.children, app.today);
+    const threshold = models.overspendSpec.threshold, cat = findCategory(text);
+    const rows = (cat && FORECAST_CATEGORIES.includes(cat) ? [cat] : FORECAST_CATEGORIES).map((c) => {
+      const now = riskRow(models, state, c, app.today, 0);
+      if (!now) return null;
+      const upper = Math.max(300, now.row.budget * 2);
+      const safe = reasonablePrice((x) => riskRow(models, state, c, app.today, x).p, threshold, upper);
+      return { c, name: CATEGORY_NAMES[c], safe, upper, risk: now.p };
+    }).filter(Boolean);
+    if (!rows.length) return "Not enough history yet to know what is safe to spend.";
+    const sum = monthSummary(models, tx, s.data.family.children, app.today);
+    const amount = (r) => (r.safe >= r.upper ? `${money(r.upper)}+` : `up to ${money(r.safe)}`);
+    if (rows.length === 1) {
+      const r = rows[0];
+      return r.safe === null
+        ? `${r.name}: nothing more this month. Our model already gives ${pct(r.risk)} chance to go over your usual level; a fresh month starts ${monthName(monthIndex(app.today) + 1)} 1.`
+        : `${r.name}: you can spend ${amount(r)} more this month and stay under the warning level (now ${pct(r.risk)} risk, ${sum.days_left} days left).`;
+    }
+    const room = rows.filter((r) => r.safe !== null && r.safe >= 5).sort((a, b) => b.safe - a.safe);
+    const none = rows.filter((r) => r.safe === null || r.safe < 5).sort((a, b) => b.risk - a.risk);
+    return [`Safe to spend this month without likely going over (our overspend model, ${sum.days_left} days left):`,
+      ...room.slice(0, 5).map((r) => `\u2022 ${r.name}: ${amount(r)}`),
+      none.length ? `No room: ${none.map((r) => `${r.name} (${pct(r.risk)} risk)`).join(", ")}.` : "",
+      "Ask “Can I buy … for $…?” to check a specific item."].filter(Boolean).join("\n");
   },
   help() {
-    return "I'm FinPilot's built-in advisor. Ask about what you spent, what's left this month, upcoming bills, goals, where money leaks, or whether something is worth buying (with its price).";
+    return "I'm FinPilot's built-in advisor (our own ML models, no internet AI). Ask what you can buy this month, what you spent, what's left, upcoming bills, goals, where money leaks, or whether something is worth buying.";
   },
 };
 

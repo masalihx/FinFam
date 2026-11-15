@@ -137,6 +137,14 @@ const a1 = answer(app, "how much did we spend on restaurants last month?");
 check("question -> spending answer", a1.topic === "spending" && a1.reply.includes("Dining"), JSON.stringify(a1));
 const a2 = answer(app, "can I buy concert tickets for $100?");
 check("question -> purchase verdict", a2.topic === "can_afford" && a2.reply.startsWith("Not worth it"), JSON.stringify(a2));
+const a4 = answer(app, "what can i buy");
+check("'what can i buy' -> safe amounts from the overspend model", a4.topic === "can_spend" && a4.reply.startsWith("Safe to spend") && /up to \$\d/.test(a4.reply), a4.reply);
+const a5 = answerTopic(app, "can_spend", "what's safe to spend on clothes right now");
+check("safe amount for one category (clothes -> Shopping)", a5.reply.startsWith("Shopping:"), a5.reply);
+const a6 = answer(app, "can i buy a laptop?");
+check("no price given -> price from our market database, then the verdict", a6.topic === "can_afford" && a6.reply.includes("average for") && /Worth it|Think about it|Not worth it/.test(a6.reply), a6.reply);
+const a7 = answer(app, "thinking of getting airpods for 249, good idea?");
+check("price written without $ is understood (not asked, not estimated)", a7.topic === "can_afford" && !a7.reply.includes("Tell me the price") && !a7.reply.includes("average for") && /Worth it|Think about it|Not worth it/.test(a7.reply), a7.reply);
 const a3 = answer(app, "hmm");
 check("unsure -> offers other topics", a3.alternatives.length === 2 && a3.confidence < 0.6, JSON.stringify(a3));
 
