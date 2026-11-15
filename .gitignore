@@ -1,0 +1,15 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Raw data is downloaded by a script, not committed
+data/raw/
+
+# Local database and secrets
+*.db
+.env
+
+# macOS
+.DS_Store
