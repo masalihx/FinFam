@@ -96,7 +96,7 @@
     const $ = (s) => box().querySelector(s);
     $("#min").addEventListener("click", () => pill(`${d.icon} FinPilot · ${esc(v.title_text)}`, showCard));
     $("#dismiss").addEventListener("click", () => pill(`${d.icon} FinPilot`, showCard));
-    $("#open").addEventListener("click", () => send({ type: "openPlatform", path: "/#/check" }));
+    $("#open").addEventListener("click", () => send({ type: "openPanel" }));
     $("#postpone")?.addEventListener("click", async () => {
       const r = await send({ type: "postpone", product: { ...product, category: v.category, decision: v.decision, probability: v.risk_after } });
       $("#postpone").textContent = r.ok ? `Postponed ✓ reminder ${r.data.remind_on}` : "Could not save";

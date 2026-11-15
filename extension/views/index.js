@@ -1,4 +1,5 @@
 // Views of the side panel and the bottom tab bar.
+import { check } from "./check.js";
 import { home } from "./home.js";
 
 export const TABS = [
@@ -9,4 +10,4 @@ export const TABS = [
   { id: "more", label: "More", icon: "≡", children: ["goals", "transactions", "check", "add", "postponed", "setup", "settings"] },
 ];
 
-export const VIEWS = { home };
+export const VIEWS = { home, check };

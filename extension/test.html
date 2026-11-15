@@ -77,6 +77,21 @@ const fixTx = store.data.transactions.find((t) => /T-?MOBILE/i.test(t.descriptio
 const n = fixTx ? await store.fixCategory(fixTx.id, "utilities") : -1;
 check("category fix updates same merchant", n > 0, `updated ${n}`);
 
+// Task 5: verdict rules and full check on the demo family
+const { decide, checkPurchase } = await import("./lib/verdict.js");
+const cases = await (await fetch("./data/verdict_cases.json")).json();
+const badCases = cases.filter((c) => { const v = decide(c.in); return v.decision !== c.decision || v.reasons.length !== c.n_reasons; });
+check(`verdict rules (${cases.length} cases)`, badCases.length === 0, JSON.stringify(badCases.slice(0, 3)));
+const app = { models: m, store, today: "2026-11-15" };
+const concert = await checkPurchase(app, { title: "Concert tickets", price: 100, url: "https://www.ticketmaster.com/e/1" });
+check("concert $100 -> not worth it with a fair price", concert.decision === "not_worth_it" && concert.reasonable_price > 10 && concert.reasonable_price < 60,
+  `${concert.decision} fair ${concert.reasonable_price} reasons ${concert.reasons.join(" | ")}`);
+const phones = await checkPurchase(app, { title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", price: 348, url: "https://www.amazon.com/dp/x" });
+check("headphones $348 -> not worth it, market range shown", phones.decision === "not_worth_it" && phones.market && phones.market.low > 0,
+  `${phones.decision} ${JSON.stringify(phones.market)}`);
+const calc = await checkPurchase(app, { title: "TI-84 Plus graphing calculator for school", price: 129, url: "https://www.amazon.com/dp/y" });
+check("school calculator judged as a need", calc.kind === "need" && calc.risk_after === null, `${calc.kind} ${calc.decision}`);
+
 const failed = results.filter((r) => !r.ok);
 document.getElementById("out").innerHTML = `<p class="${failed.length ? "bad" : "ok"}"><b>${results.length - failed.length}/${results.length} passed</b></p>` +
   results.map((r) => `<div class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.name}${r.ok ? "" : `<pre>${r.detail}</pre>`}</div>`).join("");
