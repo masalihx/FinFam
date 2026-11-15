@@ -1,0 +1,13 @@
+<!doctype html><meta charset="utf-8"><title>engine test</title><pre id="out">running...</pre>
+<script type="module">
+import { loadModels } from "./lib/ml.js";
+const m = await loadModels("./");
+const res = {};
+let ok = 0; res.categorizer = m.tests.categorizer.filter(t => { const p = m.categorizer.predict(t.text); if (p === t.expected) ok++; return p !== t.expected; }).map(t => [t.text, t.expected, m.categorizer.predict(t.text)]); res.cat_ok = ok + "/" + m.tests.categorizer.length;
+res.price = m.tests.price.map(t => [t.expected, +Math.exp(m.price.predict(t.text)).toFixed(2)]).filter(([a,b]) => Math.abs(a-b) > 0.02);
+res.intent = m.tests.intent.filter(t => m.intent.predict(t.text) !== t.expected).map(t => t.text);
+res.overspend = m.tests.overspend.map(t => [t.expected, +m.overspend.proba(t.x).toFixed(6)]).filter(([a,b]) => Math.abs(a-b) > 1e-4);
+res.recurring = m.tests.recurring.map(t => [t.expected, +m.recurring.proba(t.x).toFixed(6)]).filter(([a,b]) => Math.abs(a-b) > 1e-4);
+document.getElementById("out").textContent = JSON.stringify(res, null, 1);
+window.RESULT = res;
+</script>
