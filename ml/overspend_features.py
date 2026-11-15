@@ -80,7 +80,7 @@ def build_examples(tx: pd.DataFrame, customers: pd.DataFrame) -> pd.DataFrame:
     income = monthly_income(tx)
     inc_cum = _cum_by_day(income, ["customer_id", "month"], "income", CHECK_DAYS)
     inc_total = income.groupby(["customer_id", "month"])["income"].sum().rename("income_total")
-    inc_tbl = inc_cum.join(inc_total).reset_index()
+    inc_tbl = inc_total.to_frame().join(inc_cum).fillna(0.0).reset_index()  # keep months with late income
 
     # History features: previous months only (shift by one month).
     g = month_tbl.groupby(["customer_id", "label"])
@@ -99,11 +99,11 @@ def build_examples(tx: pd.DataFrame, customers: pd.DataFrame) -> pd.DataFrame:
         lambda s: prev(s).mean())
     month_tbl["hist_income"] = hist_income
 
-    # Over-budget share in history needs the budget of each earlier month.
-    month_tbl["was_over"] = (month_tbl["total"] > month_tbl["budget"] * (1 + OVER_MARGIN)).astype(float)
-    month_tbl.loc[month_tbl["budget"].isna(), "was_over"] = np.nan
-    month_tbl["hist_over_share"] = month_tbl.groupby(["customer_id", "label"])["was_over"].transform(
-        lambda s: s.shift(1).rolling(HISTORY_MONTHS, min_periods=1).mean()).fillna(0.0)
+    # Share of the previous months that were above today's budget (+ margin).
+    # Uses only the current budget, so the web app can compute it the same way.
+    lags = pd.concat([g["total"].shift(k).rename(k) for k in range(1, HISTORY_MONTHS + 1)], axis=1)
+    over = lags.gt(month_tbl["budget"] * (1 + OVER_MARGIN), axis=0)
+    month_tbl["hist_over_share"] = (over.sum(axis=1) / lags.notna().sum(axis=1).clip(lower=1)).astype(float)
 
     month_tbl = month_tbl[month_tbl["budget"].notna() & (month_tbl["budget"] > 1.0)]
 

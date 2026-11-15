@@ -13,7 +13,7 @@
       20,
       25
     ],
-    "model_threshold": 0.39
+    "model_threshold": 0.44
   },
   "test": {
     "baseline_proportion": {
@@ -29,11 +29,11 @@
       "pr_auc": 0.742
     },
     "model": {
-      "precision": 0.727,
-      "recall": 0.734,
-      "f1": 0.73,
-      "pr_auc": 0.855,
-      "brier": 0.1339
+      "precision": 0.774,
+      "recall": 0.69,
+      "f1": 0.729,
+      "pr_auc": 0.853,
+      "brier": 0.1343
     }
   },
   "by_day": {
@@ -45,9 +45,9 @@
         "pr_auc": 0.592
       },
       "model": {
-        "precision": 0.573,
-        "recall": 0.645,
-        "f1": 0.607,
+        "precision": 0.618,
+        "recall": 0.552,
+        "f1": 0.583,
         "pr_auc": 0.691
       }
     },
@@ -59,10 +59,10 @@
         "pr_auc": 0.701
       },
       "model": {
-        "precision": 0.641,
-        "recall": 0.681,
-        "f1": 0.66,
-        "pr_auc": 0.773
+        "precision": 0.694,
+        "recall": 0.616,
+        "f1": 0.653,
+        "pr_auc": 0.772
       }
     },
     "15": {
@@ -73,10 +73,10 @@
         "pr_auc": 0.782
       },
       "model": {
-        "precision": 0.726,
-        "recall": 0.716,
+        "precision": 0.773,
+        "recall": 0.676,
         "f1": 0.721,
-        "pr_auc": 0.843
+        "pr_auc": 0.842
       }
     },
     "20": {
@@ -87,10 +87,10 @@
         "pr_auc": 0.861
       },
       "model": {
-        "precision": 0.824,
-        "recall": 0.777,
-        "f1": 0.8,
-        "pr_auc": 0.905
+        "precision": 0.856,
+        "recall": 0.762,
+        "f1": 0.806,
+        "pr_auc": 0.903
       }
     },
     "25": {
@@ -101,97 +101,77 @@
         "pr_auc": 0.934
       },
       "model": {
-        "precision": 0.911,
-        "recall": 0.85,
-        "f1": 0.88,
-        "pr_auc": 0.955
+        "precision": 0.924,
+        "recall": 0.844,
+        "f1": 0.882,
+        "pr_auc": 0.954
       }
     }
   },
   "calibration": [
     {
       "bin": "0.0-0.1",
-      "n": 3562,
-      "predicted": 0.049,
-      "actual": 0.049
+      "n": 3593,
+      "predicted": 0.047,
+      "actual": 0.054
     },
     {
       "bin": "0.1-0.2",
-      "n": 2731,
+      "n": 2732,
       "predicted": 0.148,
-      "actual": 0.171
+      "actual": 0.169
     },
     {
       "bin": "0.2-0.3",
-      "n": 2277,
-      "predicted": 0.249,
-      "actual": 0.25
+      "n": 2318,
+      "predicted": 0.248,
+      "actual": 0.265
     },
     {
       "bin": "0.3-0.4",
-      "n": 1796,
-      "predicted": 0.346,
-      "actual": 0.347
+      "n": 1828,
+      "predicted": 0.347,
+      "actual": 0.324
     },
     {
       "bin": "0.4-0.5",
-      "n": 1270,
-      "predicted": 0.448,
-      "actual": 0.391
+      "n": 1269,
+      "predicted": 0.447,
+      "actual": 0.403
     },
     {
       "bin": "0.5-0.6",
-      "n": 846,
-      "predicted": 0.55,
-      "actual": 0.498
+      "n": 824,
+      "predicted": 0.548,
+      "actual": 0.489
     },
     {
       "bin": "0.6-0.7",
-      "n": 650,
-      "predicted": 0.649,
-      "actual": 0.552
+      "n": 639,
+      "predicted": 0.648,
+      "actual": 0.598
     },
     {
       "bin": "0.7-0.8",
-      "n": 564,
-      "predicted": 0.753,
+      "n": 516,
+      "predicted": 0.748,
       "actual": 0.709
     },
     {
       "bin": "0.8-0.9",
-      "n": 403,
-      "predicted": 0.847,
-      "actual": 0.772
+      "n": 439,
+      "predicted": 0.85,
+      "actual": 0.79
     },
     {
       "bin": "0.9-1.0",
-      "n": 2931,
-      "predicted": 0.993,
-      "actual": 0.991
+      "n": 2872,
+      "predicted": 0.995,
+      "actual": 0.992
     }
   ],
   "error_examples": {
     "missed_overspend": [
-      {
-        "customer_id": "C001631",
-        "label": "groceries",
-        "month": "2026-04",
-        "day": 25,
-        "spent_to_date": 7.5,
-        "budget": 554.81,
-        "total": 610.75,
-        "prob": 0.01
-      },
-      {
-        "customer_id": "C001666",
-        "label": "subscriptions",
-        "month": "2026-09",
-        "day": 25,
-        "spent_to_date": 22.58,
-        "budget": 22.58,
-        "total": 33.57,
-        "prob": 0.02
-      },
       {
         "customer_id": "C001187",
         "label": "subscriptions",
@@ -200,6 +180,26 @@
         "spent_to_date": 0.0,
         "budget": 19.71,
         "total": 21.9,
+        "prob": 0.01
+      },
+      {
+        "customer_id": "C001187",
+        "label": "subscriptions",
+        "month": "2026-05",
+        "day": 5,
+        "spent_to_date": 0.0,
+        "budget": 19.71,
+        "total": 21.9,
+        "prob": 0.02
+      },
+      {
+        "customer_id": "C001631",
+        "label": "groceries",
+        "month": "2026-04",
+        "day": 25,
+        "spent_to_date": 7.5,
+        "budget": 554.81,
+        "total": 610.75,
         "prob": 0.02
       }
     ],
@@ -215,23 +215,23 @@
         "prob": 1.0
       },
       {
-        "customer_id": "C000573",
+        "customer_id": "C000297",
         "label": "shopping",
         "month": "2026-05",
         "day": 20,
-        "spent_to_date": 2535.77,
-        "budget": 1597.7,
-        "total": 1744.44,
+        "spent_to_date": 625.58,
+        "budget": 397.84,
+        "total": 289.68,
         "prob": 1.0
       },
       {
-        "customer_id": "C000573",
+        "customer_id": "C000297",
         "label": "shopping",
         "month": "2026-05",
         "day": 15,
-        "spent_to_date": 2497.87,
-        "budget": 1597.7,
-        "total": 1744.44,
+        "spent_to_date": 610.68,
+        "budget": 397.84,
+        "total": 289.68,
         "prob": 1.0
       }
     ]

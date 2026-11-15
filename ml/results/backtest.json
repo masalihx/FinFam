@@ -1,0 +1,217 @@
+{
+  "setup": {
+    "purchases": 4033,
+    "families": 83,
+    "harmful_share": 0.526,
+    "months": "2026-04..2026-09",
+    "min_purchase_usd": 20.0,
+    "channel": "online",
+    "total_overspend_in_these_category_months_usd": 312826.72
+  },
+  "methods": {
+    "no_extension": {
+      "postponed_purchases": 0,
+      "postponed_share": 0.0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "overspend_avoided_usd": 0.0,
+      "avoided_per_family_month_usd": 0.0,
+      "false_alarms": 0
+    },
+    "rule_50_30_20": {
+      "postponed_purchases": 490,
+      "postponed_share": 0.121,
+      "precision": 0.657,
+      "recall": 0.152,
+      "f1": 0.246,
+      "overspend_avoided_usd": 61850.54,
+      "avoided_per_family_month_usd": 141.21,
+      "false_alarms": 168
+    },
+    "proportion": {
+      "postponed_purchases": 2545,
+      "postponed_share": 0.631,
+      "precision": 0.732,
+      "recall": 0.878,
+      "f1": 0.798,
+      "overspend_avoided_usd": 184187.84,
+      "avoided_per_family_month_usd": 420.52,
+      "false_alarms": 682
+    },
+    "model": {
+      "postponed_purchases": 2272,
+      "postponed_share": 0.563,
+      "precision": 0.788,
+      "recall": 0.844,
+      "f1": 0.815,
+      "overspend_avoided_usd": 179924.04,
+      "avoided_per_family_month_usd": 410.79,
+      "false_alarms": 481
+    }
+  },
+  "equal_alert_budget": {
+    "10%": {
+      "rule_50_30_20": {
+        "postponed_purchases": 403,
+        "postponed_share": 0.1,
+        "precision": 0.675,
+        "recall": 0.128,
+        "f1": 0.215,
+        "overspend_avoided_usd": 54140.38,
+        "avoided_per_family_month_usd": 123.61,
+        "false_alarms": 131
+      },
+      "proportion": {
+        "postponed_purchases": 403,
+        "postponed_share": 0.1,
+        "precision": 0.851,
+        "recall": 0.162,
+        "f1": 0.272,
+        "overspend_avoided_usd": 81133.2,
+        "avoided_per_family_month_usd": 185.24,
+        "false_alarms": 60
+      },
+      "model": {
+        "postponed_purchases": 403,
+        "postponed_share": 0.1,
+        "precision": 0.993,
+        "recall": 0.188,
+        "f1": 0.317,
+        "overspend_avoided_usd": 88707.77,
+        "avoided_per_family_month_usd": 202.53,
+        "false_alarms": 3
+      }
+    },
+    "20%": {
+      "rule_50_30_20": {
+        "postponed_purchases": 807,
+        "postponed_share": 0.2,
+        "precision": 0.622,
+        "recall": 0.236,
+        "f1": 0.343,
+        "overspend_avoided_usd": 100694.81,
+        "avoided_per_family_month_usd": 229.9,
+        "false_alarms": 305
+      },
+      "proportion": {
+        "postponed_purchases": 807,
+        "postponed_share": 0.2,
+        "precision": 0.82,
+        "recall": 0.312,
+        "f1": 0.452,
+        "overspend_avoided_usd": 113628.54,
+        "avoided_per_family_month_usd": 259.43,
+        "false_alarms": 145
+      },
+      "model": {
+        "postponed_purchases": 807,
+        "postponed_share": 0.2,
+        "precision": 0.995,
+        "recall": 0.378,
+        "f1": 0.548,
+        "overspend_avoided_usd": 133767.14,
+        "avoided_per_family_month_usd": 305.4,
+        "false_alarms": 4
+      }
+    },
+    "30%": {
+      "rule_50_30_20": {
+        "postponed_purchases": 1210,
+        "postponed_share": 0.3,
+        "precision": 0.582,
+        "recall": 0.332,
+        "f1": 0.422,
+        "overspend_avoided_usd": 127257.67,
+        "avoided_per_family_month_usd": 290.54,
+        "false_alarms": 506
+      },
+      "proportion": {
+        "postponed_purchases": 1210,
+        "postponed_share": 0.3,
+        "precision": 0.807,
+        "recall": 0.46,
+        "f1": 0.586,
+        "overspend_avoided_usd": 140004.62,
+        "avoided_per_family_month_usd": 319.65,
+        "false_alarms": 234
+      },
+      "model": {
+        "postponed_purchases": 1210,
+        "postponed_share": 0.3,
+        "precision": 0.963,
+        "recall": 0.549,
+        "f1": 0.699,
+        "overspend_avoided_usd": 157578.51,
+        "avoided_per_family_month_usd": 359.77,
+        "false_alarms": 45
+      }
+    }
+  },
+  "error_examples": {
+    "postponed_but_fine": [
+      {
+        "customer_id": "C000573",
+        "transaction_date": "2026-05-07T00:00:00.000",
+        "label": "shopping",
+        "price": 168.69,
+        "description": "AMAZON MKTPL*WKQVPZMT3 Amzn.com/bill WA",
+        "prob": 0.9997524264,
+        "budget": 1597.695,
+        "total": 1744.44
+      },
+      {
+        "customer_id": "C000573",
+        "transaction_date": "2026-05-15T00:00:00.000",
+        "label": "shopping",
+        "price": 110.26,
+        "description": "NORDSTROM DIRECT #0808",
+        "prob": 0.9995548816,
+        "budget": 1597.695,
+        "total": 1744.44
+      },
+      {
+        "customer_id": "C000573",
+        "transaction_date": "2026-05-25T00:00:00.000",
+        "label": "shopping",
+        "price": 132.49,
+        "description": "CHEWY.COM CHEWY.COM FL",
+        "prob": 0.9994284471,
+        "budget": 1597.695,
+        "total": 1744.44
+      }
+    ],
+    "bought_but_harmful": [
+      {
+        "customer_id": "C000863",
+        "transaction_date": "2026-06-15T00:00:00.000",
+        "label": "subscriptions",
+        "price": 29.22,
+        "description": "Recurring Card Purchase 06/15 Netflix.Com 866-579-7172 CA Card 5496",
+        "prob": 0.0318898724,
+        "budget": 48.85,
+        "total": 66.01
+      },
+      {
+        "customer_id": "C002169",
+        "transaction_date": "2026-06-22T00:00:00.000",
+        "label": "shopping",
+        "price": 39.25,
+        "description": "Card Purchase 06/22 Amazon Mktpl*L4J1Wrda3 Amzn.Com/Bill WA Card 4682",
+        "prob": 0.0344282268,
+        "budget": 684.515,
+        "total": 789.78
+      },
+      {
+        "customer_id": "C001929",
+        "transaction_date": "2026-08-23T00:00:00.000",
+        "label": "transportation",
+        "price": 60.5,
+        "description": "LYFT *RIDE 08-23",
+        "prob": 0.0440693427,
+        "budget": 510.03,
+        "total": 627.02
+      }
+    ]
+  }
+}
