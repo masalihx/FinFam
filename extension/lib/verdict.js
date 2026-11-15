@@ -4,7 +4,7 @@ import { FORECAST_CATEGORIES } from "./features.js";
 import { CATEGORY_NAMES, monthlyFreeCash, planGoals, riskRow, familyState, usualP90, AVG_DAYS_IN_MONTH } from "./finance.js";
 import { daysInMonth, dayOf, monthIndex, firstOfMonth, parse } from "./dates.js";
 
-const RED_RISK = 0.75, MIN_RISK_JUMP = 0.05, MARKET_TOLERANCE = 0.10, MIN_GOAL_PRICE = 20;
+const RED_RISK = 0.75, MIN_RISK_JUMP = 0.05, MIN_THINK_JUMP = 0.02, MARKET_TOLERANCE = 0.10, MIN_GOAL_PRICE = 20;
 // Show a market price only if the listed price is within 3x of the similar items' range (ml/train_price_knn.py:
 // on unseen stores this keeps 96% of items at 32.7% median error; the hidden 4% had 88.6%, mostly accessories with the same name).
 const MARKET_GATE = 3;
@@ -59,12 +59,15 @@ export function decide(s) {
   }
   const jump = s.riskAfter != null && s.riskBefore != null ? s.riskAfter - s.riskBefore : 0;
   const highRisk = s.riskAfter != null && s.riskAfter >= RED_RISK && jump >= MIN_RISK_JUMP;
-  const someRisk = s.riskAfter != null && s.riskAfter >= s.warnThreshold;
+  // Judge the purchase, not the month (same as ml/verdict.py v4.3).
+  const crosses = s.riskBefore != null && s.riskAfter != null && s.riskBefore < s.warnThreshold && s.warnThreshold <= s.riskAfter;
+  const someRisk = s.riskAfter != null && s.riskAfter >= s.warnThreshold && (jump >= MIN_THINK_JUMP || crosses);
+  const already = s.riskAfter != null && s.riskAfter >= s.warnThreshold && !someRisk && !highRisk;
   checks.high_risk = highRisk;
   if (s.riskAfter != null && (highRisk || someRisk)) {
-    reasons.push(jump < MIN_RISK_JUMP
-      ? `Your ${s.categoryName} spending is already likely to go over this month (${pct(s.riskAfter)}); this small purchase adds little, but every bit counts.`
-      : `Chance of going over your usual ${s.categoryName} spending this month: ${pct(s.riskBefore)} → ${pct(s.riskAfter)} with this purchase.`);
+    reasons.push(`Chance of going over your usual ${s.categoryName} spending this month: ${pct(s.riskBefore)} → ${pct(s.riskAfter)} with this purchase.`);
+  } else if (already) {
+    reasons.push(`${s.categoryName} is already likely to go over this month (${pct(s.riskAfter)}), but this purchase barely changes it (+${Math.round(Math.max(0, jump) * 100)} points).`);
   }
   const aboveUsual = s.usualP90 != null && s.price > s.usualP90;
   checks.above_usual = aboveUsual;
@@ -148,8 +151,11 @@ export function explainVerdict(r) {
       : "Your family currently spends about everything it earns.";
   }
   let why = r.reasons.find((x) => !x.startsWith("Similar items cost") && !x.startsWith("The price is in the upper half")) || null;
-  if (why && /chance of going over|already likely to go over/i.test(why) && r.risk_after != null) {
+  if (why && /^Chance of going over/.test(why) && r.risk_after != null) {
     why = `ML forecast: ${pct(r.risk_before)} → ${pct(r.risk_after)} chance to overspend on ${r.category_name} this month with this purchase.`;
+  } else if (why && / is already likely to go over/.test(why) && r.risk_after != null) {
+    const pts = Math.round(Math.max(0, r.risk_after - r.risk_before) * 100);
+    why = `ML forecast: ${r.category_name} is already ${pct(r.risk_after)} likely to go over this month, but this purchase adds only ${pts} point${pts === 1 ? "" : "s"}.`;
   }
   let market = null;
   if (r.market) {

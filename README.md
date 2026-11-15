@@ -37,7 +37,7 @@ entertainment, the ML chance of overspending jumps from 20% to 100%, and a price
 ## 3. What we added ourselves (beyond calling an API)
 - Six ML parts trained and tested by us, each against simple baselines (and against Gemini where we could).
 - A **backtest of the decision itself** in dollars, not just model metrics.
-- All models **exported from Python and ported to JavaScript**, verified number-for-number: **70 automated checks** in `extension/test.html` (incl. 672 verdict-rule cases and the market search).
+- All models **exported from Python and ported to JavaScript**, verified number-for-number: **70 automated checks** in `extension/test.html` (incl. 1,536 verdict-rule cases and the market search).
 - An **offline advisor**: our intent model + our money code answer questions; when the model is unsure it offers the next likely topics as buttons.
 
 ## 4. How it works
@@ -84,6 +84,8 @@ entertainment, the ML chance of overspending jumps from 20% to 100%, and a price
 | Proportion rule | $232 | 0.82 | 126 |
 | Overspend model alone | $286 | 0.99 | 4 |
 | **FinPilot verdict** | **$285** | 0.66 | 236 |
+
+**Verdict balance.** “Think about it” now judges the purchase, not the month: it needs the purchase itself to add 2+ points of overspend risk (or cross the warning level). Before, a category already likely to go over made almost everything “Think”. On 200 random Amazon items for the demo family (Shopping already at 85% risk): Worth it 1.5% → **36%**, Think 79.5% → **45%**, Not worth it 19% (unchanged). In the backtest “Think” fell from 21% to 10% of purchases; the headline numbers above count only “Not worth it” and did not change.
 
 **Market price** (7,277 products from stores not in the training data; median error / share within ±25%):
 category median 53.6% / 24% · ridge on titles 37.1% / 36% · **kNN search (used) 33.5% / 38%**.

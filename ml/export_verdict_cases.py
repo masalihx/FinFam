@@ -12,7 +12,7 @@ from verdict import Signals, decide  # noqa: E402
 
 cases = []
 for price, need, rb, ra, p90, low, high, behind in itertools.product(
-        [15, 60, 140, 400], [False, True], [None, 0.2, 0.8], [None, 0.3, 0.5, 0.9], [None, 50, 200],
+        [15, 60, 140, 400], [False, True], [None, 0.2, 0.8, 0.85], [None, 0.3, 0.5, 0.86, 0.88, 0.9], [None, 50, 200],
         [None, 30], [None, 120], [False, True]):
     if (rb is None) != (ra is None) or (low is None) != (high is None):
         continue

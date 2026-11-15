@@ -5,7 +5,7 @@
     "harmful_share": 0.526,
     "months": "2026-04..2026-09",
     "verdict_not_worth_it": 696,
-    "verdict_think": 855,
+    "verdict_think": 421,
     "not_in_backtest": "market price and goals (bank lines have no product title; dataset has no goals)",
     "overspend_definition": "category month total > 1.10 x usual level"
   },
@@ -91,34 +91,34 @@
     ],
     "buy_but_harmful": [
       {
-        "customer_id": "C001464",
-        "transaction_date": "2026-08-09T00:00:00.000",
-        "label": "shopping",
-        "price": 542.26,
-        "description": "AMAZON MKTPL*LFGJ2Y2H3 Amzn.com/bill WA",
-        "risk": 0.3550744223,
-        "budget": 3128.49,
-        "total": 9275.07
+        "customer_id": "C000253",
+        "transaction_date": "2026-04-17T00:00:00.000",
+        "label": "travel",
+        "price": 1162.51,
+        "description": "DELTA AIR 0066144866518 DELTA.COM GA",
+        "risk": 0.9998128736,
+        "budget": 725.67,
+        "total": 3895.56
       },
       {
-        "customer_id": "C001587",
-        "transaction_date": "2026-06-17T00:00:00.000",
-        "label": "shopping",
-        "price": 417.36,
-        "description": "AMAZON MKTPL*485K11433 Amzn.com/bill WA",
-        "risk": 0.1159562712,
-        "budget": 2932.075,
-        "total": 6270.19
+        "customer_id": "C000253",
+        "transaction_date": "2026-04-17T00:00:00.000",
+        "label": "travel",
+        "price": 1162.51,
+        "description": "DELTA AIR 0067911143450 DELTA.COM GA",
+        "risk": 0.9998128736,
+        "budget": 725.67,
+        "total": 3895.56
       },
       {
-        "customer_id": "C001587",
-        "transaction_date": "2026-06-11T00:00:00.000",
+        "customer_id": "C002340",
+        "transaction_date": "2026-07-22T00:00:00.000",
         "label": "shopping",
-        "price": 377.69,
-        "description": "WALMART.COM BENTONVILLE AR",
-        "risk": 0.1056594054,
-        "budget": 2932.075,
-        "total": 6270.19
+        "price": 618.05,
+        "description": "Card Purchase 07/22 Amazon.Com*Sdofc3Pt3 Amzn.Com/Bill WA Card 9849",
+        "risk": 0.9995356486,
+        "budget": 1531.7,
+        "total": 2738.49
       }
     ]
   }

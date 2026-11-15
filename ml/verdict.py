@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 
 RED_RISK = 0.75        # high risk (top ~20% of situations on validation months)
 MIN_RISK_JUMP = 0.05   # a purchase must itself raise the risk to be blamed for it
+MIN_THINK_JUMP = 0.02  # "Think about it" only if the purchase itself adds 2+ points of risk (or crosses the warning level)
 MARKET_TOLERANCE = 0.10  # up to 10% above the typical range still counts as a normal price
 MIN_GOAL_PRICE = 20.0  # tiny purchases do not move goals in a meaningful way
 
@@ -59,15 +60,18 @@ def decide(s: Signals) -> Verdict:
 
     jump = (s.risk_after - s.risk_before) if s.risk_after is not None and s.risk_before is not None else 0.0
     high_risk = s.risk_after is not None and s.risk_after >= RED_RISK and jump >= MIN_RISK_JUMP
-    some_risk = s.risk_after is not None and s.risk_after >= s.warn_threshold
+    # Judge the purchase, not the month: a category that is already likely to go over does not make
+    # every small purchase "think" (v4.3; before, 158 of 200 sampled Amazon items were "think" for that reason alone).
+    crosses = s.risk_before is not None and s.risk_after is not None and s.risk_before < s.warn_threshold <= s.risk_after
+    some_risk = s.risk_after is not None and s.risk_after >= s.warn_threshold and (jump >= MIN_THINK_JUMP or crosses)
+    already = s.risk_after is not None and s.risk_after >= s.warn_threshold and not some_risk and not high_risk
     checks["high_risk"] = high_risk
     if s.risk_after is not None and (high_risk or some_risk):
-        if jump < MIN_RISK_JUMP:
-            reasons.append(f"Your {s.category_name} spending is already likely to go over this month "
-                           f"({s.risk_after:.0%}); this small purchase adds little, but every bit counts.")
-        else:
-            reasons.append(f"Chance of going over your usual {s.category_name} spending this month: "
-                           f"{s.risk_before:.0%} → {s.risk_after:.0%} with this purchase.")
+        reasons.append(f"Chance of going over your usual {s.category_name} spending this month: "
+                       f"{s.risk_before:.0%} → {s.risk_after:.0%} with this purchase.")
+    elif already:
+        reasons.append(f"{s.category_name} is already likely to go over this month ({s.risk_after:.0%}), "
+                       f"but this purchase barely changes it (+{max(0.0, jump) * 100:.0f} points).")
 
     above_usual = s.usual_p90 is not None and s.price > s.usual_p90
     checks["above_usual"] = above_usual
