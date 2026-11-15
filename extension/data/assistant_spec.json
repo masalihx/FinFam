@@ -1,0 +1,191 @@
+{
+ "tools": [
+  {
+   "name": "get_month_summary",
+   "description": "This month's spending, income, money kept per month, and for each category: spent, usual level or family limit, ML chance of going over, expected rest of month.",
+   "parameters": {
+    "type": "OBJECT",
+    "properties": {}
+   }
+  },
+  {
+   "name": "get_spending",
+   "description": "Total spending by category and by person for a month (past months too).",
+   "parameters": {
+    "type": "OBJECT",
+    "properties": {
+     "category": {
+      "type": "STRING",
+      "enum": [
+       "groceries",
+       "dining",
+       "transportation",
+       "shopping",
+       "housing",
+       "utilities",
+       "subscriptions",
+       "entertainment",
+       "health",
+       "personal_care",
+       "travel",
+       "insurance",
+       "education_childcare",
+       "fees",
+       "income",
+       "transfer"
+      ],
+      "description": "Only this category"
+     },
+     "month": {
+      "type": "STRING",
+      "description": "Month as YYYY-MM; default this month"
+     },
+     "scope": {
+      "type": "STRING",
+      "enum": [
+       "family",
+       "me"
+      ],
+      "description": "'me' for the person asking (e.g. a teen asking about their own money)"
+     }
+    }
+   }
+  },
+  {
+   "name": "get_upcoming",
+   "description": "Regular payments found by the ML model (rent, bills, subscriptions) and planned expenses for the next days.",
+   "parameters": {
+    "type": "OBJECT",
+    "properties": {
+     "days": {
+      "type": "INTEGER",
+      "description": "How many days ahead, default 30"
+     }
+    }
+   }
+  },
+  {
+   "name": "get_goals",
+   "description": "Family goals and the asker's personal goals: needed per month, projected date, on track or behind.",
+   "parameters": {
+    "type": "OBJECT",
+    "properties": {}
+   }
+  },
+  {
+   "name": "check_purchase",
+   "description": "FinPilot's ML verdict for buying something now: Buy / Think about it / Not worth it, reasons, reasonable price for the family, market price range.",
+   "parameters": {
+    "type": "OBJECT",
+    "properties": {
+     "title": {
+      "type": "STRING"
+     },
+     "price": {
+      "type": "NUMBER"
+     },
+     "url": {
+      "type": "STRING"
+     }
+    },
+    "required": [
+     "title",
+     "price"
+    ]
+   }
+  },
+  {
+   "name": "where_losing_money",
+   "description": "Categories that grew most compared with a usual month, share of income spent on wants, yearly cost of subscriptions.",
+   "parameters": {
+    "type": "OBJECT",
+    "properties": {}
+   }
+  },
+  {
+   "name": "get_postponed",
+   "description": "Purchases the family postponed and money kept by not buying.",
+   "parameters": {
+    "type": "OBJECT",
+    "properties": {}
+   }
+  }
+ ],
+ "instruction": "You are FinPilot, a family money assistant inside a Chrome extension. Today is {today}.\nFamily: {family}. You are talking to {me}.\nNeeds and wants set by the parents: {needs_wants}.\n\nRules:\n- Never calculate or guess money numbers yourself. Always call a tool and use only the numbers it returns.\n- Pick the tool by the question type. Examples (question -> tool):\n{examples}\n- For greetings, thanks or \"what can you do\", answer in one or two sentences without tools.\n- If a teen asks about \"my\" money, use scope \"me\".\n- Answer in short, plain English (at most 5 short lines). Say \"this is not financial advice\" only when giving a recommendation.\n- Category names: {categories}.",
+ "examples": [
+  {
+   "q": "how much money went to dining last month",
+   "tool": "get_spending"
+  },
+  {
+   "q": "what did i spend on dining last month",
+   "tool": "get_spending"
+  },
+  {
+   "q": "is $120 for a jacket too much right now",
+   "tool": "check_purchase"
+  },
+  {
+   "q": "can i buy a jacket for $120",
+   "tool": "check_purchase"
+  },
+  {
+   "q": "how much can i still spend on dining last month",
+   "tool": "get_month_summary"
+  },
+  {
+   "q": "how is my budget",
+   "tool": "get_month_summary"
+  },
+  {
+   "q": "when will we reach the college fund",
+   "tool": "get_goals"
+  },
+  {
+   "q": "how long until the college fund",
+   "tool": "get_goals"
+  },
+  {
+   "q": "why is my spending so high last month",
+   "tool": "where_losing_money"
+  },
+  {
+   "q": "where am i losing money",
+   "tool": "where_losing_money"
+  },
+  {
+   "q": "list my postponed things",
+   "tool": "get_postponed"
+  },
+  {
+   "q": "what is on my wait list",
+   "tool": "get_postponed"
+  },
+  {
+   "q": "what bills are coming up",
+   "tool": "get_upcoming"
+  },
+  {
+   "q": "upcoming payments",
+   "tool": "get_upcoming"
+  },
+  {
+   "q": "thanks",
+   "tool": null
+  },
+  {
+   "q": "hey there",
+   "tool": null
+  }
+ ],
+ "intent_tool": {
+  "spending": "get_spending",
+  "can_afford": "check_purchase",
+  "budget_left": "get_month_summary",
+  "goals": "get_goals",
+  "where_losing": "where_losing_money",
+  "postponed": "get_postponed",
+  "upcoming": "get_upcoming",
+  "help": null
+ }
+}

@@ -57,17 +57,17 @@ Overspend features for any day, recurring series, free cash, goal plans, usual p
 ## Phase 3: Gemini
 
 ### Task 8: Uploads via Gemini (S)
-- [ ] Settings: Gemini key; receipt photo / PDF / CSV → preview → import
+- [x] Settings: Gemini key; receipt photo / PDF / CSV → preview → import (Excel: asks to save as CSV — no remote libraries allowed in MV3)
 - Files: `extension/lib/gemini.js`, `extension/panel.js`, `extension/manifest.json`
 
 ### Task 9: Gemini assistant taught by context + our models as tools (M)
-- [ ] System instruction with family rules + examples from our datasets; tools = our JS ML functions
-- [ ] Offline fallback = intent model
+- [x] System instruction with family rules + examples from our datasets; tools = our JS ML functions
+- [x] Offline fallback = intent model
 - [ ] Python evaluation: tool choice accuracy (Gemini + context + tools) vs Gemini zero-shot vs intent model on the 47 test questions
 - Files: `extension/lib/gemini.js`, `extension/lib/assistant.js`, `ml/eval_gemini_tools.py`
 
 ### Task 10: PayPal Sandbox from the extension (S, cut first if late)
-- [ ] Settings: PayPal sandbox keys; sync → transactions to the member with matching PayPal email
+- [x] Settings: PayPal sandbox keys; sync → transactions to the member with matching PayPal email (verify in real Chrome: CORS blocks it on a plain page)
 
 ### Checkpoint C
 - [ ] Full demo script works from the extension only

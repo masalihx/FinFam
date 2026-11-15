@@ -4,6 +4,7 @@ import { loadModels } from "./lib/ml.js";
 import { Store } from "./lib/store.js";
 import { todayStr } from "./lib/dates.js";
 import { checkPurchase } from "./lib/verdict.js";
+import { answer } from "./lib/assistant.js";
 
 let modelsPromise = null;
 async function app() {
@@ -18,6 +19,7 @@ async function app() {
 
 const ROUTES = {
   async check(msg) { return checkPurchase(await app(), msg.product); },
+  async chat(msg) { const a = await app(); return answer(a, msg.message, msg.context, [], chrome.runtime.getURL("")); },
   async postpone(msg) { const a = await app(); return { remind_on: await a.store.postpone(msg.product) }; },
   async openPanel(msg, sender) { await chrome.sidePanel.open({ tabId: sender.tab.id }); return { ok: true }; },
 };
