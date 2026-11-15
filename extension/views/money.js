@@ -65,7 +65,7 @@ export async function money(el, app, state = { q: "", shown: PAGE }) {
     const d = form.description.value.trim();
     if (!d) { form.category.options[0].textContent = "Auto (ML)"; return; }
     const amount = (kind === "income" ? 1 : -1) * (Number(form.amount.value) || 1);
-    const c = s.categorize([{ amount, description: d }])[0].category;
+    const c = s.categorize([{ amount, description: d, channel: "manual" }])[0].category;
     form.category.options[0].textContent = `Auto (ML): ${CATEGORY_NAMES[c] || c}`;
     $("#guess", el).textContent = form.category.value ? "You picked the category yourself." : `ML thinks: ${CATEGORY_NAMES[c] || c}. Change it if it's wrong.`;
   };

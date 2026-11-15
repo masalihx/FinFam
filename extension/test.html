@@ -85,6 +85,11 @@ await store.addEntry({ kind: "income", amount: "1500", description: "Salary ACME
 const [e1, e2] = store.data.transactions;
 check("expense saved negative, category by ML", e1.amount === -23.4 && e1.category === "dining" && e1.category_source === "model", JSON.stringify(e1));
 check("income saved positive", e2.amount === 1500 && e2.category === "income", JSON.stringify(e2));
+const [salary, refund, sold] = store.categorize([{ amount: 1200, description: "PAYPAL *Salary", source: "paypal" },
+  { amount: 25, description: "PAYPAL *Refund Nike shoes", source: "paypal" }, { amount: 80, description: "Sold old bike on eBay", channel: "manual" }]);
+check("money in from PayPal or marked as income counts as income (refunds left to the model)",
+  salary.category === "income" && sold.category === "income" && refund.category === m.categorizer.predict("[credit] PAYPAL *Refund Nike shoes") && refund.category_source === "model",
+  `${salary.category} ${sold.category} ${refund.category}`);
 let noAmount = false; try { await store.addEntry({ kind: "expense", amount: 0, description: "x" }); } catch (e) { noAmount = true; }
 check("zero amount rejected", noAmount);
 await store.lock(); await store.unlock(normalizePassword(pw));

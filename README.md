@@ -37,7 +37,7 @@ entertainment, the ML chance of overspending jumps from 20% to 100%, and a price
 ## 3. What we added ourselves (beyond calling an API)
 - Six ML parts trained and tested by us, each against simple baselines (and against Gemini where we could).
 - A **backtest of the decision itself** in dollars, not just model metrics.
-- All models **exported from Python and ported to JavaScript**, verified number-for-number: **63 automated checks** in `extension/test.html` (incl. 672 verdict-rule cases and the market search).
+- All models **exported from Python and ported to JavaScript**, verified number-for-number: **66 automated checks** in `extension/test.html` (incl. 672 verdict-rule cases and the market search).
 - An **offline advisor**: our intent model + our money code answer questions; when the model is unsure it offers the next likely topics as buttons.
 
 ## 4. How it works
@@ -106,7 +106,7 @@ keywords 30% · **our model 60%** · right answer *or* the right topic offered a
 - **Advisor understands only 60% of free-text questions**: “rent date” → spending, “what's on hold” → spending. That is why the main actions are buttons and the advisor shows how it understood each question.
 - **The “usual price” rule trades precision for dollars**: it flags expensive items even in months that end fine.
 - **Missed big purchases**: $542 on Amazon mid-month looked low-risk (36%); the month later tripled.
-- **Categorization mistakes**: credit-card interest read as Entertainment, T-Mobile as Transport — fixable with one click, and the fix spreads to the same merchant.
+- **Categorization mistakes**: credit-card interest read as Entertainment, T-Mobile as Transport — fixable with one click, and the fix spreads to the same merchant. A $1,200 PayPal "Salary" was read as Shopping (and counted as negative spending); now money that surely came in (PayPal receipts, entries marked Income) counts as income. We do not apply this to bank lines: there many shopping refunds are positive, and a general rule lowered test macro-F1 (0.6961 → 0.6953).
 - **One computer**: the family's data lives in one browser; syncing across devices needs a server (next step).
 - **PayPal shows only part of a person's spending.** PayPal gives third-party apps the person's name and email, not their whole payment history, so FinPilot imports only payments made through our PayPal shop (Sandbox, test money). Full history would need a bank-data aggregator (paid) or PayPal partner approval. Our app's PayPal secret sits in the extension because there is no server; a real product would exchange the login code on a server.
 
@@ -120,7 +120,7 @@ Family sync across devices, real bank connections (open banking), fresher price 
 4. Optional: **Money → Connect PayPal → Log in with PayPal** and log in with a PayPal **Sandbox personal** account. (Developers: this needs `extension/paypal.config.json`, made from `.env` by `python3 scripts/make_paypal_config.py`, and in the Sandbox app: *Log in with PayPal* on, Return URL `https://lakkaedhdeopfgfnpioemhplfomfgbam.chromiumapp.org/paypal`, *Transaction Search* on.)
 5. Open any product page (e.g. Amazon) — the card appears; or select a product and price → right-click → **Is this worth it?**
 
-Engine tests: serve `extension/` over http (`python3 -m http.server`) and open `test.html?memory` (63 checks) or `card-test.html?memory` (the card on a test product page).
+Engine tests: serve `extension/` over http (`python3 -m http.server`) and open `test.html?memory` (66 checks) or `card-test.html?memory` (the card on a test product page).
 Retrain and re-export the models: `pip install -r requirements.txt`, then `python ml/data_prep.py`, the `ml/train_*.py` scripts, and `python ml/export_extension.py`. Results notebook: `notebooks/FinPilot_results.ipynb`. Earlier versions are kept: website v2 in `backend/` and `web/`.
 
 ## 9. Sources
