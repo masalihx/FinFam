@@ -115,7 +115,7 @@ Next payment within ±3 days: 96% vs 84% for “last + 30 days”.
 - **Missed big purchases**: $542 on Amazon mid-month looked low-risk (36%); the month later tripled.
 - **Categorization mistakes**: credit-card interest read as Entertainment, T-Mobile as Transport — fixable with one click, and the fix spreads to the same merchant. A $1,200 PayPal "Salary" was read as Shopping (and counted as negative spending); now money that surely came in (PayPal receipts, entries marked Income) counts as income. We do not apply this to bank lines: there many shopping refunds are positive, and a general rule lowered test macro-F1 (0.6961 → 0.6953).
 - **One computer**: the family's data lives in one browser; syncing across devices needs a server (next step).
-- **PayPal shows only part of a person's spending.** PayPal gives third-party apps the person's name and email, not their whole payment history, so FinPilot imports only payments made through our PayPal shop (Sandbox, test money). Full history would need a bank-data aggregator (paid) or PayPal partner approval. Our app's PayPal secret sits in the extension because there is no server; a real product would exchange the login code on a server.
+- **PayPal shows only part of a person's spending.** PayPal gives third-party apps the person's name and email, not their whole payment history, so FinPilot imports only payments made through our PayPal shop (Sandbox, test money). Full history would need a bank-data aggregator (paid) or PayPal partner approval. Our Sandbox app's PayPal secret is published in the repository (test money only) because there is no server; a real product would exchange the login code on a server.
 
 ## 7. What's next
 Family sync across devices, real bank connections (open banking), fresher price data, parent approval of teen purchases, a model trained on real (consented) family data.
@@ -124,7 +124,7 @@ Family sync across devices, real bank connections (open banking), fresher price 
 1. Download this repository (Code → Download ZIP) and unzip, or `git clone`.
 2. Chrome → `chrome://extensions` → switch on **Developer mode** → **Load unpacked** → choose the `extension/` folder.
 3. Click the FinPilot icon → the side panel opens → **Try the demo family** (password **DEMO26**) or **Create a new family**.
-4. Optional: **Money → Connect PayPal → Log in with PayPal** and log in with a PayPal **Sandbox personal** account. (Developers: this needs `extension/paypal.config.json`, made from `.env` by `python3 scripts/make_paypal_config.py`, and in the Sandbox app: *Log in with PayPal* on, Return URL `https://lakkaedhdeopfgfnpioemhplfomfgbam.chromiumapp.org/paypal`, *Transaction Search* on.)
+4. Optional: **Money → Connect PayPal → Log in with PayPal** and log in with a PayPal **Sandbox personal** account. (It works out of the box: `extension/paypal.config.json` with our **Sandbox** app keys is in the repository on purpose — test money only. A real product would keep the secret on a server. Our Sandbox app has *Log in with PayPal* on with Return URL `https://lakkaedhdeopfgfnpioemhplfomfgbam.chromiumapp.org/paypal`, and *Transaction Search* on.)
 5. Turn on **Shop check** (switch at the top of the panel, or right-click the FinPilot icon). Open any product page (e.g. Amazon) — the card appears; or select a product and price → right-click → **Is this worth it?**
 
 Engine tests: serve `extension/` over http (`python3 -m http.server`) and open `test.html?memory` (70 checks) or `card-test.html?memory` (the card on a test product page).
