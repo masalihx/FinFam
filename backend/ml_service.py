@@ -115,13 +115,30 @@ def features_with_budget(state: FamilyState, category: str, as_of: pd.Timestamp,
     return add_features(pd.DataFrame([values])).iloc[0]
 
 
+# Words in a product title that point to a category other than general shopping.
+# The bank-transaction model is not trained on product titles, so product pages use
+# the store and these words; anything else on a shop page counts as Shopping.
+TITLE_KEYWORDS = {
+    "groceries": ["grocery", "snack", "coffee beans", "cereal", "organic", "pantry", "beverage"],
+    "entertainment": ["ticket", "concert", "game pass", "video game", "playstation", "xbox", "nintendo", "movie"],
+    "travel": ["flight", "hotel", "airfare", "luggage reservation", "vacation package"],
+    "health": ["vitamin", "supplement", "medicine", "pharmacy", "first aid", "thermometer"],
+    "personal_care": ["shampoo", "skincare", "makeup", "cosmetic", "perfume", "razor", "haircut"],
+    "subscriptions": ["subscription", "membership", "monthly plan"],
+    "dining": ["restaurant", "meal delivery", "pizza", "burger"],
+}
+
+
 def category_for_product(categorizer: Categorizer, title: str, url: str) -> str:
     host = urlparse(url or "").netloc.lower()
     for key, cat in SITE_CATEGORIES.items():
         if key in host:
             return cat
-    site = host.replace("www.", "")
-    return categorizer.predict_spending(f"[debit] {site} {title}")
+    low = (title or "").lower()
+    for cat, words in TITLE_KEYWORDS.items():
+        if any(w in low for w in words):
+            return cat
+    return "shopping"
 
 
 def now() -> pd.Timestamp:

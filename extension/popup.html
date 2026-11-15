@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>FinPilot</title>
+  <style>
+    * { box-sizing: border-box; font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    body { width: 340px; margin: 0; color: #0f172a; font-size: 13px; }
+    header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid #e2e8f0; }
+    .logo { width: 28px; height: 28px; border-radius: 8px; background: #0f766e; color: #fff; display: grid; place-items: center; font-weight: 700; }
+    .status { margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 999px; background: #f1f5f9; color: #475569; }
+    .status.ok { background: #dcfce7; color: #166534; }
+    .status.bad { background: #fee2e2; color: #991b1b; }
+    section { padding: 12px 14px; border-bottom: 1px solid #f1f5f9; }
+    h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #64748b; margin: 0 0 8px; }
+    label { display: block; font-size: 12px; color: #475569; margin-bottom: 6px; }
+    input { width: 100%; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 8px; font-size: 13px; margin-top: 3px; }
+    .row { display: flex; gap: 8px; }
+    button { background: #0f766e; color: #fff; border: none; border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+    button.sec { background: #fff; color: #0f172a; border: 1px solid #cbd5e1; }
+    .result { margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: #f8fafc; white-space: pre-line; }
+    .muted { color: #64748b; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">F</div>
+    <div><b>FinPilot</b><div class="muted">Buy now or wait?</div></div>
+    <span class="status" id="status">…</span>
+  </header>
+
+  <section>
+    <h2>This page</h2>
+    <label>Product <input id="title"></label>
+    <div class="row">
+      <label style="flex:1">Price, USD <input id="price" type="number" min="0" step="0.01"></label>
+    </div>
+    <div class="row"><button id="check">Check this purchase</button><button class="sec" id="open">Open FinPilot</button></div>
+    <div class="muted" id="found"></div>
+  </section>
+
+  <section>
+    <h2>Ask the assistant</h2>
+    <form id="chat-form" class="row"><input id="q" placeholder="How much is left for shopping?"><button>Ask</button></form>
+    <div class="result" id="answer" hidden></div>
+  </section>
+
+  <section>
+    <h2>Settings</h2>
+    <label>FinPilot platform address <input id="api" placeholder="http://localhost:8000"></label>
+    <button class="sec" id="save">Save</button>
+    <p class="muted">Only the product name, price and link are sent, and only to your own FinPilot platform. Prototype, not financial advice.</p>
+  </section>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "FinPilot — buy now or wait?",
+  "version": "0.1.0",
+  "description": "On any product page, FinPilot checks your family budget and goals and tells you whether to buy now or postpone. Prototype, not financial advice.",
+  "icons": { "16": "icons/icon16.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": { "default_popup": "popup.html", "default_title": "FinPilot" },
+  "background": { "service_worker": "background.js" },
+  "permissions": ["storage", "activeTab", "contextMenus"],
+  "host_permissions": ["http://localhost/*", "http://127.0.0.1/*"],
+  "content_scripts": [
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "js": ["detect.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
