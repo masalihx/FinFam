@@ -1,16 +1,16 @@
-# Video script (≤ 2 minutes)
+# Video script (≤ 2 minutes) — v3, everything in the extension
 
-Record the screen with QuickTime (File → New Screen Recording) or Cmd+Shift+5.
-Before recording: start the server, open http://localhost:8000, log out, install the extension and log in as Alex in it.
+Record with QuickTime (File → New Screen Recording) or Cmd+Shift+5.
+Before recording: load the extension, open the side panel, load the demo family, add your Gemini key in Settings, then switch profile so the picker is showing.
 Speak in English; times are a guide.
 
 | Time | Screen | Say |
 |---|---|---|
-| 0:00–0:12 | Login page (hero text) | "Families decide about money one purchase at a time — in a shop, often a teen with a phone. Budget apps only show what already happened. FinPilot decides *before* you click Buy." |
-| 0:12–0:30 | Click **Alex** → Overview | "This is the Carters' family room: two parents, two teens, one shared view. Our ML model forecasts, for every category, the chance of ending the month over the usual level — groceries 90%, shopping high risk. Below: upcoming bills our model found by itself." |
-| 0:30–0:42 | Banner → **Needs & wants** | "The AI sorted spending into needs and wants and found regular payments. A parent confirms and sets limits — FinPilot judges purchases against this." Set Shopping limit, Save. |
-| 0:42–1:05 | Open the demo product page (or Amazon) with the extension | "Now Alex is shopping. The extension reads the product and price… Not worth it: it's 81% above what similar items cost, it pushes shopping risk from 78% to 100%, and it's more than this family usually pays." Click **Postpone**. |
-| 1:05–1:20 | **Check a purchase** → Concert tickets $100 | "Concert tickets are fine — at $100 they're not. A reasonable price for this family this month is about $25." |
-| 1:20–1:30 | Log in as **Maya** → My space; Add data → upload the receipt photo | "Teens have their own space — allowance, earnings, goals — and it still counts in the family total. Receipts are read by Gemini, our model sorts them." |
-| 1:30–1:50 | README results table / notebook chart | "We tested on families the models never saw. With the same number of warnings, FinPilot avoids $285 of overspending per family per month — the 50/30/20 rule avoids $201. Honest limit: data is synthetic, and the price rule raises false alarms." |
-| 1:50–2:00 | Logo / disclaimer | "FinPilot. This project is a prototype and is not financial advice." |
+| 0:00–0:12 | Amazon product page, FinPilot icon | "Families decide about money one purchase at a time — in a shop, often a teen with a phone. Budget apps show what already happened. FinPilot decides *before* you click Buy." |
+| 0:12–0:25 | Side panel: "Who's using FinPilot?" → Alex → PIN | "FinPilot lives inside Chrome. Every family member has a profile. No server — the data stays on this computer." |
+| 0:25–0:42 | Home | "Our ML model forecasts, for each category, the chance of ending the month over the usual level — groceries and shopping are high risk. Upcoming bills were found by another model from the bank history." |
+| 0:42–1:02 | Product page → card appears | "On any product page FinPilot reads the item and price: Not worth it — 81% above what similar items cost, shopping risk goes to 100%, and it's more than this family usually pays." Click **Postpone**. |
+| 1:02–1:15 | Check tab → Concert tickets $100 | "Concert tickets are fine — at $100 they're not. A reasonable price for this family this month is about $16." |
+| 1:15–1:28 | Ask tab → "What bills are coming up?" (meta line shows "used get_upcoming") | "The assistant is Gemini, taught with our family rules and examples, and it calls our models as tools — every number comes from our code." |
+| 1:28–1:48 | README results table | "On families the models never saw, at the same number of warnings, FinPilot avoids $285 of overspending per family per month — the 50/30/20 rule avoids $201. Limits: synthetic data, and the price rule raises false alarms." |
+| 1:48–2:00 | Logo / disclaimer | "FinPilot. This project is a prototype and is not financial advice." |
