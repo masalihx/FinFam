@@ -118,6 +118,9 @@ check("verdict tells what is left this month", concert.left_this_month != null &
 const phones = checkPurchase(app, { title: "Sony WH-1000XM5 Wireless Noise Canceling Headphones", price: 348, url: "https://www.amazon.com/dp/x" });
 check("headphones $348 -> not worth it, market price shown", phones.decision === "not_worth_it" && phones.market?.median > 0 && phones.market.similar.length > 0,
   `${phones.decision} ${JSON.stringify(phones.market)}`);
+const pods = checkPurchase(app, { title: "Apple AirPods Pro (2nd generation) wireless earbuds", price: 249, url: "https://www.amazon.com/dp/z" });
+check("accessory-priced neighbours -> no market price shown", pods.market === null && pods.market_unclear && pods.explain.market.average === null, JSON.stringify(pods.market_unclear));
+check("explanation is consistent (no 'left' + 'no room' clash)", !(concert.explain.family.includes(" left ") && /no room/i.test(concert.explain.fair || "")), JSON.stringify(concert.explain));
 const calc = checkPurchase(app, { title: "TI-84 Plus graphing calculator for school", price: 129, url: "https://www.amazon.com/dp/y" });
 check("school calculator judged as a need", calc.kind === "need" && calc.risk_after === null, `${calc.kind} ${calc.decision}`);
 

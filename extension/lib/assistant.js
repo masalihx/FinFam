@@ -2,7 +2,7 @@
 // decides what the question is about; our other models and code compute every number.
 // If the model is unsure, the answer also offers the next likely topics as one-tap buttons.
 import { CATEGORY_NAMES, isSpending, monthSummary, monthlyFreeCash, planGoals, upcomingRecurring } from "./finance.js";
-import { addDays, monthIndex, monthStr } from "./dates.js";
+import { addDays, monthIndex, monthName } from "./dates.js";
 import { checkPurchase } from "./verdict.js";
 
 export const TOPICS = {
@@ -37,7 +37,7 @@ const ANSWERS = {
   spending(app, text) {
     const mi = findMonth(text, app.today), cat = findCategory(text);
     const tx = app.store.data.transactions.filter((t) => monthIndex(t.date) === mi && isSpending(t) && (!cat || t.category === cat));
-    const total = -tx.reduce((a, t) => a + t.amount, 0), label = mi === monthIndex(app.today) ? "this month" : `in ${monthStr(mi)}`;
+    const total = -tx.reduce((a, t) => a + t.amount, 0), label = mi === monthIndex(app.today) ? "this month" : `in ${monthName(mi)}`;
     if (cat) return `You spent ${money(total)} on ${CATEGORY_NAMES[cat]} ${label} (${tx.length} payments).`;
     const by = {};
     for (const t of tx) by[t.category] = (by[t.category] || 0) - t.amount;
@@ -80,7 +80,7 @@ const ANSWERS = {
       return { c, now: monthly(last, c), usual: (hist[2] + hist[3]) / 2 };
     }).filter((g) => g.now - g.usual > 20).sort((a, b) => b.now - b.usual - (a.now - a.usual)).slice(0, 3);
     const subs = monthly(last, "subscriptions");
-    return [`In ${monthStr(last)} these grew most compared with a usual month:`,
+    return [`In ${monthName(last)} these grew most compared with a usual month:`,
       ...(grew.length ? grew.map((g) => `• ${CATEGORY_NAMES[g.c] || g.c}: ${money(g.now)} vs usual ${money(g.usual)}`) : ["• nothing unusual"]),
       subs > 0 ? `Subscriptions cost ${money(subs * 12)} a year — check which ones you still use.` : ""].filter(Boolean).join("\n");
   },
@@ -95,9 +95,8 @@ const ANSWERS = {
     const price = m ? Number((m[1] || m[2]).replace(/,/g, "")) : context?.price;
     if (!price) return "Tell me the price, for example: “Can I buy sneakers for $90?”";
     const title = context?.title || text.replace(/can i|should i|buy|get|afford|for|\$\s?[\d.,]+|\?/gi, " ").replace(/\s+/g, " ").trim();
-    const r = checkPurchase(app, { title, price, url: context?.url || "" });
-    return [`${r.title_text}.`, r.left_this_month != null ? `${r.category_name}: ${money(Math.max(0, r.left_this_month))} left this month.` : "",
-      ...r.reasons.slice(0, 2).map((x) => `• ${x}`), r.reasonable_price ? `A reasonable price for you now: up to ${money(r.reasonable_price)}.` : ""].filter(Boolean).join("\n");
+    const r = checkPurchase(app, { title, price, url: context?.url || "" }), e = r.explain;
+    return [`${r.title_text}.`, e.family, e.why, e.market?.text, e.fair].filter(Boolean).join("\n");
   },
   help() {
     return "I'm FinPilot's built-in advisor. Ask about what you spent, what's left this month, upcoming bills, goals, where money leaks, or whether something is worth buying (with its price).";

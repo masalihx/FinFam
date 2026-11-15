@@ -1,94 +1,147 @@
-// Transactions (with category fixes), needs & wants setup, postponed purchases, and the More menu.
-import { CATEGORY_NAMES, setupSuggestions, upcomingRecurring } from "../lib/finance.js";
-import { $, $$, busy, esc, money, shortDate, toast } from "../lib/ui.js";
+// Part 2 of the panel: Money. The family writes expenses and income here (ML picks the category),
+// fixes categories, and can connect its own PayPal Sandbox account.
+import { CATEGORY_NAMES, isSpending } from "../lib/finance.js";
+import { monthIndex } from "../lib/dates.js";
+import { connectPaypal, disconnectPaypal, paypalConnected, syncPaypal } from "../lib/paypal.js";
+import { $, $$, busy, closeSheet, esc, formData, money as fmt, sheet, shortDate, toast } from "../lib/ui.js";
 
-export async function transactions(el, app, params) {
-  const s = app.store, names = Object.fromEntries(s.members().map((m) => [m.id, m.name]));
-  const f = { q: params.get("q") || "", member: params.get("member") || "", category: params.get("category") || "" };
-  const list = [...s.data.transactions].reverse().filter((t) => (!f.q || t.description.toLowerCase().includes(f.q.toLowerCase()))
-    && (!f.member || String(t.member_id) === f.member) && (!f.category || t.category === f.category)).slice(0, 150);
-  const catOptions = (sel) => Object.entries(CATEGORY_NAMES).map(([k, v]) => `<option value="${k}" ${k === sel ? "selected" : ""}>${esc(v)}</option>`).join("");
+const PAGE = 40;
+const LINK_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07 0l3-3a5 5 0 0 0-7.07-7.07l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.07 0l-3 3a5 5 0 0 0 7.07 7.07l1.5-1.5"/></svg>`;
+const SOURCE = { model: "ML", user: "you", paypal: "PayPal" };
+const catOptions = (sel) => Object.entries(CATEGORY_NAMES).map(([k, v]) => `<option value="${k}" ${k === sel ? "selected" : ""}>${esc(v)}</option>`).join("");
+
+function txRow(t) {
+  return `<li class="tx" data-id="${esc(t.id)}">
+    <div class="tx-top"><span class="title">${esc(t.description)}</span><b class="num ${t.amount > 0 ? "pos" : ""}">${fmt(t.amount, 2)}</b></div>
+    <div class="tx-bottom"><span class="xs muted">${shortDate(t.date)}${t.source === "paypal" ? " · PayPal" : ""} · category by ${SOURCE[t.category_source] || "file"}</span>
+      <span class="tx-actions"><select class="select mini" data-cat aria-label="Category for ${esc(t.description)}">${catOptions(t.category)}</select>
+        <button class="icon-btn" data-del aria-label="Delete ${esc(t.description)}" title="Delete">✕</button></span></div></li>`;
+}
+
+export async function money(el, app, state = { q: "", shown: PAGE }) {
+  const s = app.store, tx = s.data.transactions, cur = monthIndex(app.today);
+  const month = tx.filter((t) => monthIndex(t.date) === cur);
+  const income = month.filter((t) => t.category === "income" && t.source !== "allowance").reduce((a, t) => a + t.amount, 0); // same rule as the Advisor
+  const spent = -month.filter(isSpending).reduce((a, t) => a + t.amount, 0);
+  const connected = paypalConnected(s);
+  const q = state.q.toLowerCase();
+  const list = [...tx].reverse().filter((t) => !q || t.description.toLowerCase().includes(q) || (CATEGORY_NAMES[t.category] || "").toLowerCase().includes(q));
+
   el.innerHTML = `<div class="stack">
-    <div><h1>Transactions</h1><p class="xs muted" style="margin:0">The AI sets each category. Fix one and FinPilot fixes every payment from that merchant.</p></div>
-    <form class="section stack" id="filters" role="search">
-      <input class="input" name="q" value="${esc(f.q)}" placeholder="Search description" aria-label="Search description">
-      <div class="grid2"><select class="select" name="member" aria-label="Who"><option value="">Everyone</option>${s.members().map((m) => `<option value="${m.id}" ${String(m.id) === f.member ? "selected" : ""}>${esc(m.name)}</option>`).join("")}</select>
-        <select class="select" name="category" aria-label="Category"><option value="">All categories</option>${catOptions(f.category)}</select></div>
-    </form>
-    <section class="section">${list.map((t) => `<div class="row" style="display:block">
-      <div style="display:flex;justify-content:space-between;gap:8px"><span class="title" style="min-width:0">${esc(t.description)}</span><b class="num" style="${t.amount > 0 ? "color:var(--green)" : ""}">${money(t.amount, 2)}</b></div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:4px">
-        <span class="xs muted">${shortDate(t.date)} · ${esc(names[t.member_id] || "")} · ${t.category_source === "user" ? "you" : t.category_source === "file" ? "file" : "AI"}</span>
-        <select class="select" style="width:auto;padding:2px 6px;font-size:12px" data-tx="${esc(t.id)}" aria-label="Category for ${esc(t.description)}">${catOptions(t.category)}</select></div></div>`).join("") || `<p class="muted">No transactions match.</p>`}</section>
+    <section class="section" aria-labelledby="h-add">
+      <div class="section-head"><h2 id="h-add">Add money in or out</h2>
+        <button class="btn ${connected ? "ghost" : "paypal"} sm" id="paypal" aria-haspopup="dialog">${LINK_ICON}${connected ? "PayPal connected" : "Connect PayPal"}</button></div>
+      <form id="add" class="stack" novalidate>
+        <div class="seg block" role="group" aria-label="Expense or income">
+          <button type="button" data-kind="expense" aria-pressed="true">Expense</button><button type="button" data-kind="income" aria-pressed="false">Income</button></div>
+        <div class="grid2"><label class="field">Amount, $<input class="input" name="amount" type="number" min="0.01" step="0.01" inputmode="decimal" required placeholder="0.00"></label>
+          <label class="field">Date<input class="input" name="date" type="date" value="${app.today}" max="${app.today}" required></label></div>
+        <label class="field">What was it?<input class="input" name="description" required placeholder="Trader Joe's groceries" autocomplete="off"></label>
+        <label class="field">Category<select class="select" name="category"><option value="">Auto (ML)</option>${catOptions("")}</select>
+          <span class="xs muted" id="guess" aria-live="polite">Start typing — the ML model picks the category.</span></label>
+        <button class="btn primary block" id="add-btn">Add expense</button>
+      </form>
+    </section>
+    <div class="kpis"><div class="kpi"><div class="label">Spent this month</div><div class="value num">${fmt(spent)}</div></div>
+      <div class="kpi"><div class="label">Income this month</div><div class="value num">${fmt(income)}</div></div></div>
+    <section class="section" aria-labelledby="h-list">
+      <div class="section-head"><h2 id="h-list">History</h2><span class="xs muted">${tx.length} entries</span></div>
+      <input class="input" id="search" type="search" value="${esc(state.q)}" placeholder="Search description or category" aria-label="Search history">
+      <ul class="tx-list" id="list">${list.slice(0, state.shown).map(txRow).join("") || `<li class="small muted" style="padding:12px 0">${tx.length ? "Nothing matches." : "No entries yet. Add the first one above."}</li>`}</ul>
+      ${list.length > state.shown ? `<button class="btn ghost sm block" id="more">Show more (${list.length - state.shown} left)</button>` : ""}
+    </section>
   </div>`;
-  const form = $("#filters", el);
-  const go = () => { const p = new URLSearchParams([...new FormData(form)].filter(([, v]) => v)); location.hash = `transactions${p.toString() ? `?${p}` : ""}`; };
-  form.addEventListener("change", go);
-  form.addEventListener("submit", (e) => { e.preventDefault(); go(); });
-  $$("[data-tx]", el).forEach((sel) => sel.addEventListener("change", async () => {
-    const n = await s.fixCategory(sel.dataset.tx, sel.value);
-    toast(`Saved. ${n} other payment(s) from this merchant updated.`);
-    app.refresh();
-  }));
-}
 
-export async function setup(el, app) {
-  const s = app.store;
-  if (s.me.role !== "parent") throw new Error("Only parents can change needs and wants.");
-  const byCat = {};
-  for (const u of upcomingRecurring(app.models, s.data.transactions, app.today, 400)) if (u.amount < 0) (byCat[u.category] ||= []).push(u.name);
-  const rows = setupSuggestions(app.models, s.data.transactions, app.today, byCat).map((r) => {
-    const saved = s.data.family.needs_wants[r.category];
-    return saved ? { ...r, kind: saved.kind, suggested_limit: saved.limit ?? r.suggested_limit } : r;
-  });
-  el.innerHTML = `<div class="stack">
-    <div><h1>Needs &amp; wants</h1><p class="small muted" style="margin:0">The AI looked at the last 6 months and found regular payments. Confirm what is a <b>need</b> and what is a <b>want</b>, and set monthly limits for wants. Verdicts use this.</p></div>
-    <section class="section">${rows.map((r, i) => `<div class="row" style="display:block" data-i="${i}">
-      <div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(r.name)}</b><span class="num small">${money(r.usual_per_month)}/mo</span></div>
-      <div class="xs muted">${esc(r.why)}</div>
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px">
-        <span class="seg" role="group" aria-label="${esc(r.name)}: need or want"><button type="button" data-kind="need" aria-pressed="${r.kind === "need"}">Need</button><button type="button" data-kind="want" aria-pressed="${r.kind === "want"}">Want</button></span>
-        <label class="small" style="display:flex;align-items:center;gap:6px">Limit $<input class="input" style="width:90px" type="number" min="0" step="10" value="${r.kind === "want" && r.suggested_limit != null ? Math.round(r.suggested_limit) : ""}" ${r.kind === "need" ? "disabled" : ""} aria-label="${esc(r.name)} monthly limit"></label>
-      </div></div>`).join("")}</section>
-    <button class="btn primary block" id="save">Save</button></div>`;
-  $$("[data-i]", el).forEach((row) => $$("[data-kind]", row).forEach((b) => b.addEventListener("click", () => {
-    $$("[data-kind]", row).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
-    const input = $("input", row);
-    input.disabled = b.dataset.kind === "need";
-    if (input.disabled) input.value = "";
-    else if (!input.value) input.value = Math.round(rows[row.dataset.i].usual_per_month);
-  })));
-  $("#save", el).addEventListener("click", (e) => busy(e.currentTarget, async () => {
-    const items = $$("[data-i]", el).map((row) => {
-      const kind = $('[aria-pressed="true"]', row).dataset.kind, v = $("input", row).value;
-      return { category: rows[row.dataset.i].category, kind, monthly_limit: kind === "want" && v !== "" ? Number(v) : null };
+  // add form: expense/income switch and live ML category
+  const form = $("#add", el);
+  let kind = "expense";
+  $$("[data-kind]", form).forEach((b) => b.addEventListener("click", () => {
+    kind = b.dataset.kind;
+    $$("[data-kind]", form).forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+    $("#add-btn", el).textContent = kind === "income" ? "Add income" : "Add expense";
+    guess();
+  }));
+  const guess = () => {
+    const d = form.description.value.trim();
+    if (!d) { form.category.options[0].textContent = "Auto (ML)"; return; }
+    const amount = (kind === "income" ? 1 : -1) * (Number(form.amount.value) || 1);
+    const c = s.categorize([{ amount, description: d }])[0].category;
+    form.category.options[0].textContent = `Auto (ML): ${CATEGORY_NAMES[c] || c}`;
+    $("#guess", el).textContent = form.category.value ? "You picked the category yourself." : `ML thinks: ${CATEGORY_NAMES[c] || c}. Change it if it's wrong.`;
+  };
+  form.description.addEventListener("input", guess);
+  form.amount.addEventListener("input", guess);
+  form.category.addEventListener("change", guess);
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const f = formData(form);
+    busy(e.submitter, async () => {
+      await s.addEntry({ kind, amount: f.amount, description: f.description, date: f.date, category: f.category || null });
+      const t = s.data.transactions.find((x) => x.description === f.description.trim() && x.date === f.date && x.id.startsWith("manual-"));
+      toast(`Added ${kind === "income" ? "income" : "expense"} ${fmt(Number(f.amount), 2)} · ${CATEGORY_NAMES[t?.category] || ""}`);
+      money(el, app, { q: "", shown: PAGE });
     });
-    await s.saveSetup(items);
-    toast("Saved. Verdicts now use your needs, wants and limits.");
-    location.hash = "home";
-  }));
+  });
+
+  // history: search, fix category, delete (press twice), show more
+  let timer;
+  $("#search", el).addEventListener("input", (e) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => money(el, app, { q: e.target.value, shown: PAGE }).then(() => { const i = $("#search", el); i.focus(); i.setSelectionRange(i.value.length, i.value.length); }), 250);
+  });
+  $("#more", el)?.addEventListener("click", () => money(el, app, { ...state, shown: state.shown + PAGE }));
+  $$(".tx", el).forEach((li) => {
+    const id = li.dataset.id;
+    $("[data-cat]", li).addEventListener("change", async (e) => {
+      const n = await s.fixCategory(id, e.target.value);
+      toast(n ? `Saved. ${n} other payment(s) from the same place were fixed too.` : "Saved. FinPilot will remember this.");
+    });
+    $("[data-del]", li).addEventListener("click", async (e) => {
+      const b = e.currentTarget;
+      if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Delete?"; return setTimeout(() => { b.classList.remove("confirm"); b.textContent = "✕"; }, 3000); }
+      await s.deleteTransaction(id);
+      li.remove();
+      toast("Deleted.");
+    });
+  });
+
+  $("#paypal", el).addEventListener("click", () => paypalSheet(app, () => money(el, app, state)));
 }
 
-export async function postponed(el, app) {
-  const s = app.store, names = Object.fromEntries(s.members().map((m) => [m.id, m.name]));
-  const items = s.data.postponed;
-  const waiting = items.filter((i) => i.status === "waiting").reduce((a, i) => a + i.price, 0);
-  const kept = items.filter((i) => i.status === "dropped").reduce((a, i) => a + i.price, 0);
-  el.innerHTML = `<div class="stack"><div><h1>Postponed</h1><p class="small muted" style="margin:0">${money(waiting)} waiting · ${money(kept)} kept by deciding not to buy</p></div>
-    <section class="section">${items.map((i) => `<div class="row"><div class="main"><div class="title">${esc(i.title)}</div>
-      <div class="xs muted">${esc(names[i.member_id] || "")} · reminder ${shortDate(i.remind_on)}</div></div>
-      <div style="display:flex;gap:6px;align-items:center"><b class="num">${money(i.price, 2)}</b>${i.status === "waiting"
-        ? `<button class="btn ghost sm" data-pp="${i.id}" data-st="bought">Bought</button><button class="btn ghost sm" data-pp="${i.id}" data-st="dropped">Not needed</button>`
-        : `<span class="tag ${i.status === "dropped" ? "green" : "gray"}">${i.status === "dropped" ? "Kept the money" : "Bought"}</span>`}</div></div>`).join("")
-      || `<p class="muted small">Nothing postponed. When FinPilot says “Not worth it”, press Postpone.</p>`}</section></div>`;
-  $$("[data-pp]", el).forEach((b) => b.addEventListener("click", async () => { await s.setPostponedStatus(b.dataset.pp, b.dataset.st); app.refresh(); }));
-}
-
-export async function more(el, app) {
-  const links = [["goals", "Goals", "Family and personal goals"], ["check", "Check a purchase", "Is it worth it?"],
-    ["transactions", "Transactions", "Everyone's payments, fix categories"], ["add", "Add data", "Receipts, statements, PayPal"],
-    ["postponed", "Postponed", "Things you decided to wait on"], ["setup", "Needs & wants", "Parents: limits for wants"],
-    ["settings", "Settings", "Gemini key, PayPal, family"]];
-  el.innerHTML = `<div class="stack"><h1>More</h1><nav class="section" aria-label="More">${links.map(([id, t, d]) =>
-    `<a class="row" href="#${id}" style="text-decoration:none;color:inherit"><span class="main"><span class="title">${t}</span><span class="xs muted" style="display:block">${d}</span></span><span aria-hidden="true">›</span></a>`).join("")}</nav></div>`;
+function paypalSheet(app, done) {
+  const s = app.store, st = s.data.settings;
+  if (paypalConnected(s)) {
+    const box = sheet(`<div class="section-head"><h2>PayPal</h2><button class="btn ghost sm" id="close">Close</button></div>
+      <p class="small">Connected to your PayPal <b>Sandbox</b> app${st.paypal_connected_at ? ` since ${esc(st.paypal_connected_at)}` : ""}.${st.paypal_synced_at ? ` Last sync: ${esc(st.paypal_synced_at)}.` : ""}</p>
+      <div class="stack"><button class="btn primary block" id="sync">Sync last 90 days</button><button class="btn danger block" id="disconnect">Disconnect</button></div>
+      <p class="xs muted">Disconnect removes the keys from this computer. Payments already imported stay.</p>`, "PayPal");
+    $("#close", box).addEventListener("click", closeSheet);
+    $("#sync", box).addEventListener("click", (e) => busy(e.currentTarget, async () => {
+      const r = await syncPaypal(s);
+      closeSheet(); done(); toast(`PayPal: ${r.found} payments found, ${r.imported} new.`);
+    }));
+    $("#disconnect", box).addEventListener("click", async () => { await disconnectPaypal(s); closeSheet(); done(); toast("PayPal disconnected."); });
+    return;
+  }
+  const box = sheet(`<div class="section-head"><h2>Connect PayPal</h2><button class="btn ghost sm" id="close">Cancel</button></div>
+    <ol class="steps small">
+      <li>Open <b>developer.paypal.com</b> → <b>Apps &amp; Credentials</b> → <b>Sandbox</b>, and create an app (or open yours).</li>
+      <li>In the app's features, turn on <b>Transaction Search</b>.</li>
+      <li>Copy the <b>Client ID</b> and <b>Secret</b> here.</li></ol>
+    <form id="pp" class="stack" novalidate>
+      <label class="field">Client ID<input class="input" name="id" required autocomplete="off" spellcheck="false"></label>
+      <label class="field">Secret<input class="input" name="secret" type="password" required autocomplete="off"></label>
+      <button class="btn primary block">Connect and import</button></form>
+    <p class="xs muted">Sandbox only: test accounts and test money. FinPilot checks the keys with PayPal and keeps them only in your family's data on this computer.</p>`, "Connect PayPal");
+  $("#close", box).addEventListener("click", closeSheet);
+  $("#pp", box).addEventListener("submit", (e) => {
+    e.preventDefault();
+    const f = formData(e.target);
+    busy(e.submitter, async () => {
+      await connectPaypal(s, f.id, f.secret);
+      const r = await syncPaypal(s).catch((err) => ({ error: err.message }));
+      closeSheet(); done();
+      toast(r.error ? `PayPal connected, but the import failed: ${r.error}` : `PayPal connected: ${r.found} payments found, ${r.imported} new.`, 6000);
+    });
+  });
 }

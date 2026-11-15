@@ -1,139 +1,155 @@
-// FinPilot side panel: first run, profile picker, shell and router.
+// FinPilot side panel: the family password lock, then exactly two parts: Advisor and Money.
 import { loadModels } from "./lib/ml.js";
-import { Store } from "./lib/store.js";
+import { MarketIndex } from "./lib/market.js";
+import { DEMO_PASSWORD, Store, generatePassword, normalizePassword, validPassword } from "./lib/store.js";
 import { todayStr } from "./lib/dates.js";
-import { $, $$, avatar, busy, esc, formData, toast } from "./lib/ui.js";
-import { VIEWS, TABS } from "./views/index.js";
+import { $, $$, busy, closeSheet, esc, formData, sheet, toast } from "./lib/ui.js";
+import { advisor } from "./views/advisor.js";
+import { money } from "./views/money.js";
 
 const root = $("#root");
-const app = { models: null, store: null, today: todayStr(), refresh: () => route() };
+const TABS = { advisor: ["Advisor", advisor], money: ["Money", money] };
+const app = { models: null, market: null, marketReady: null, store: null, today: todayStr(), tab: "advisor",
+  refresh: () => renderTab(), go: (tab) => { app.tab = tab; renderShell(); } };
 
-// ------------------------------------------------------------------ first run
+// The market price database (66k products) is indexed once, after the first screen is shown.
+function loadMarket() {
+  app.marketReady ||= new Promise((r) => setTimeout(r, 200))
+    .then(() => fetch("models/price_index.json")).then((r) => r.json()).then((spec) => { app.market = new MarketIndex(spec); });
+  return app.marketReady;
+}
 
-function renderOnboarding() {
+// ------------------------------------------------------------------ lock screen
+
+function renderLock() {
   root.innerHTML = `
-    <div class="center">
-      <div style="display:flex;align-items:center;gap:8px"><span class="logo">F</span><b>FinPilot</b></div>
-      <h1 style="margin-top:16px">Your family's money copilot</h1>
-      <p class="muted">Before you click Buy, FinPilot checks your family budget, your usual prices and market prices. Everything stays on this computer.</p>
-      <button class="btn primary block" id="demo" style="margin-top:8px">Try the demo family (the Carters)</button>
-      <p class="xs muted">2 parents, 2 teens. Synthetic bank data from an open dataset (Misata, CC BY 4.0) plus generated teen spending. PINs: Alex 1111, Sam 2222, Maya 3333, Leo 4444.</p>
-      <div class="section" style="margin-top:16px">
-        <h2>Create your family</h2>
-        <form id="create" class="stack" style="margin-top:12px">
-          <label class="field">Family name<input class="input" name="family" required placeholder="The Smith family"></label>
-          <div id="people"></div>
-          <button type="button" class="btn ghost sm" id="add-person">+ Add a family member</button>
-          <button class="btn primary block">Create family</button>
-        </form>
+    <div class="center lock">
+      <div class="brand"><span class="logo" aria-hidden="true">F</span><b>FinPilot</b></div>
+      <h1>Your family's money advisor</h1>
+      <p class="muted small">Built-in ML checks every purchase against your family budget and market prices. No AI keys, and your data stays on this computer.</p>
+      <form id="open" class="section stack" novalidate>
+        <label class="field">Family password
+          <input class="input code" name="password" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" required aria-describedby="pw-help">
+        </label>
+        <span id="pw-help" class="xs muted">Everyone in the family uses the same 6-character password.</span>
+        <button class="btn primary block">Open</button>
+      </form>
+      <div class="or" role="separator"><span>or</span></div>
+      <div class="stack">
+        <button class="btn ghost block" id="new">Create a new family</button>
+        <button class="btn ghost block" id="demo">Try the demo family</button>
+        <p class="xs muted" style="text-align:center;margin:0">Demo password: <b class="code-inline">${DEMO_PASSWORD}</b> · the Carters, 2 parents and 2 teens</p>
       </div>
     </div>`;
-  const people = $("#people");
-  const addRow = (role = "teen") => {
-    const i = people.children.length;
-    people.insertAdjacentHTML("beforeend", `
-      <fieldset class="grid2" style="border:0;padding:0;margin:0 0 8px;grid-template-columns:1.4fr 1fr .8fr">
-        <legend class="sr-only">Member ${i + 1}</legend>
-        <label class="field">Name<input class="input" name="name${i}" required></label>
-        <label class="field">Role<select class="select" name="role${i}"><option value="parent" ${role === "parent" ? "selected" : ""}>Parent</option><option value="teen" ${role === "teen" ? "selected" : ""}>Teen</option></select></label>
-        <label class="field">PIN<input class="input" name="pin${i}" inputmode="numeric" pattern="\\d{4}" maxlength="4" required></label>
-      </fieldset>`);
-  };
-  addRow("parent");
-  $("#add-person").addEventListener("click", () => addRow());
+  const input = $("#open input");
+  input.focus();
+  input.addEventListener("input", () => { input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); });
+  $("#open").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const pw = normalizePassword(input.value);
+    if (pw.length !== 6) { toast("The password has 6 letters and digits."); return input.focus(); }
+    busy(e.submitter, async () => { await app.store.unlock(pw); start(); });
+  });
   $("#demo").addEventListener("click", (e) => busy(e.currentTarget, async () => {
     const demo = await (await fetch("data/demo_family.json")).json();
     await app.store.loadDemo(demo, app.today);
     start();
   }));
-  $("#create").addEventListener("submit", (e) => {
+  $("#new").addEventListener("click", newFamily);
+}
+
+function newFamily() {
+  const box = sheet(`
+    <div class="section-head"><h2>New family</h2><button class="btn ghost sm" id="cancel">Cancel</button></div>
+    <form id="create" class="stack" novalidate>
+      <label class="field">Family name<input class="input" name="name" required placeholder="The Smiths"></label>
+      <label class="field">Children living at home
+        <select class="select" name="children">${[0, 1, 2, 3, 4, 5].map((n) => `<option ${n === 2 ? "selected" : ""}>${n}</option>`).join("")}</select>
+      </label>
+      <div class="field"><span id="np-label">Family password</span>
+        <div class="pw-row"><input class="input code" name="password" maxlength="6" value="${generatePassword()}" aria-labelledby="np-label" aria-describedby="np-help" autocomplete="off" spellcheck="false">
+          <button type="button" class="btn ghost" id="regen">New</button></div>
+        <span id="np-help" class="xs muted">6 letters and digits, at least one of each. Write it down: it can't be recovered. Everyone in the family opens FinPilot with it.</span>
+      </div>
+      <button class="btn primary block">Create family</button>
+    </form>`, "New family");
+  const pw = $("[name=password]", box);
+  pw.addEventListener("input", () => { pw.value = pw.value.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 6); });
+  $("#regen", box).addEventListener("click", () => { pw.value = generatePassword(); });
+  $("#cancel", box).addEventListener("click", closeSheet);
+  $("#create", box).addEventListener("submit", (e) => {
     e.preventDefault();
     const f = formData(e.target);
-    const members = [...people.children].map((_, i) => ({ name: f[`name${i}`], role: f[`role${i}`], pin: f[`pin${i}`] }));
-    if (!members.some((m) => m.role === "parent")) return toast("A family needs at least one parent.");
-    busy(e.submitter, async () => { await app.store.createFamily(f.family, members); start(); });
+    if (!f.name.trim()) return toast("Name your family.");
+    if (!validPassword(normalizePassword(f.password))) return toast("Password: exactly 6 letters and digits, with at least one of each.");
+    busy(e.submitter, async () => {
+      await app.store.createFamily(f.name, f.password, Number(f.children));
+      closeSheet();
+      app.tab = "money";
+      start();
+      toast(`Family created. Password ${normalizePassword(f.password)} — write it down.`, 8000);
+    });
   });
 }
 
-// ------------------------------------------------------------------ profile picker
-
-function renderPicker() {
-  const s = app.store;
-  root.innerHTML = `
-    <div class="center">
-      <h1>Who's using FinPilot?</h1>
-      <p class="muted">${esc(s.data.family.name)}</p>
-      <div class="people">${s.members().map((m, i) => `
-        <button class="person" data-id="${m.id}">${avatar(m.name, i, "lg")}<b>${esc(m.name)}</b><span class="xs muted">${m.role === "parent" ? "Parent" : "Teen"}</span></button>`).join("")}</div>
-    </div>`;
-  $$(".person").forEach((b) => b.addEventListener("click", () => askPin(Number(b.dataset.id))));
-}
-
-function askPin(id) {
-  const m = app.store.member(id);
-  root.innerHTML = `
-    <div class="center" style="text-align:center">
-      <h1>Hi, ${esc(m.name)}</h1><p class="muted">Enter your 4-digit PIN</p>
-      <div class="pin"><input id="pin" type="password" inputmode="numeric" maxlength="4" autocomplete="off" aria-label="4-digit PIN"
-        style="width:160px;letter-spacing:12px;text-align:center"></div>
-      <button class="btn ghost" id="back">Back</button>
-    </div>`;
-  const input = $("#pin");
-  input.focus();
-  input.addEventListener("input", async () => {
-    input.value = input.value.replace(/\D/g, "").slice(0, 4);
-    if (input.value.length < 4) return;
-    try { await app.store.login(id, input.value); start(); } catch (e) { toast(e.message); input.value = ""; input.focus(); }
-  });
-  $("#back").addEventListener("click", renderPicker);
-}
-
-// ------------------------------------------------------------------ shell and router
+// ------------------------------------------------------------------ shell with two parts
 
 function renderShell() {
-  const s = app.store, me = s.me;
-  const idx = s.members().findIndex((m) => m.id === me.id);
+  const fam = app.store.data.family;
   root.innerHTML = `
     <header class="topbar">
-      <span class="logo">F</span>
-      <div><div class="family">${esc(s.data.family.name)}</div><div class="sub">${s.data.family.is_demo ? "Demo family · " : ""}prototype, not financial advice</div></div>
-      <button class="profile-chip" id="switch" aria-label="Switch profile">${avatar(me.name, idx)}${esc(me.name)}</button>
+      <span class="logo" aria-hidden="true">F</span>
+      <div class="who"><div class="family">${esc(fam.name)}</div><div class="sub">${fam.is_demo ? "Demo family · " : ""}prototype, not financial advice</div></div>
+      <button class="btn ghost sm" id="lock" title="Lock: the family password is needed again">Lock</button>
     </header>
-    <main id="view"></main>
-    <nav class="tabbar" aria-label="Main">${TABS.map((t) => `<button data-tab="${t.id}"><span class="ico" aria-hidden="true">${t.icon}</span>${t.label}</button>`).join("")}</nav>`;
-  $("#switch").addEventListener("click", async () => { await s.logout(); renderPicker(); });
-  $$("[data-tab]").forEach((b) => b.addEventListener("click", () => { location.hash = b.dataset.tab; }));
+    <div class="tabs" role="tablist" aria-label="FinPilot">${Object.entries(TABS).map(([id, [label]]) =>
+      `<button role="tab" id="tab-${id}" aria-controls="view" aria-selected="${id === app.tab}" tabindex="${id === app.tab ? 0 : -1}">${label}</button>`).join("")}</div>
+    <main id="view" role="tabpanel" aria-labelledby="tab-${app.tab}" tabindex="-1"></main>`;
+  $("#lock").addEventListener("click", async () => { await app.store.lock(); app.tab = "advisor"; renderLock(); });
+  const tabs = $$("[role=tab]");
+  tabs.forEach((t, i) => {
+    t.addEventListener("click", () => app.go(t.id.slice(4)));
+    t.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+      app.go(next.id.slice(4));
+      $(`#${next.id}`).focus();
+    });
+  });
+  renderTab();
 }
 
-async function route() {
-  if (!app.store.me) return;
-  const [id, query] = (location.hash.slice(1) || "home").split("?");
-  const view = VIEWS[id] ? id : "home";
-  const tab = TABS.find((t) => t.id === view || (t.children || []).includes(view))?.id;
-  $$("[data-tab]").forEach((b) => (b.dataset.tab === tab ? b.setAttribute("aria-current", "page") : b.removeAttribute("aria-current")));
+async function renderTab() {
   const el = $("#view");
+  if (!el) return;
   el.innerHTML = `<div class="skeleton" style="height:22px;width:50%"></div><div class="skeleton" style="height:90px;margin-top:12px"></div>`;
   try {
-    await VIEWS[view](el, app, new URLSearchParams(query || ""));
+    await TABS[app.tab][1](el, app);
   } catch (e) {
     console.error(e);
     el.innerHTML = `<div class="section" role="alert"><h2>Something went wrong</h2><p class="muted">${esc(e.message)}</p><button class="btn ghost" id="retry">Try again</button></div>`;
-    $("#retry").addEventListener("click", route);
+    $("#retry").addEventListener("click", renderTab);
   }
-  window.scrollTo(0, 0);
 }
-window.addEventListener("hashchange", route);
 
 function start() {
-  if (!app.store.ready) return renderOnboarding();
-  if (!app.store.me) return renderPicker();
+  if (!app.store.ready) return renderLock();
   renderShell();
-  route();
+  loadMarket();
 }
 
 (async () => {
   app.models = await loadModels("");
   app.store = new Store(app.models);
-  await app.store.load();
+  await app.store.resume();
   start();
 })().catch((e) => { root.innerHTML = `<div class="center" role="alert"><h1>FinPilot could not start</h1><p class="muted">${esc(e.message)}</p></div>`; });
+
+// The on-page card may add data (Postpone); show it when the panel comes back into view.
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible" || !app.store?.ready) return;
+  const key = app.store.key, rev = app.store.data.rev;
+  if (!(await app.store.resume())) return renderLock();
+  if (app.store.key !== key) return renderShell(); // another family was opened elsewhere
+  if (app.store.data.rev !== rev && !$(".sheet-bg") && !document.activeElement?.matches("input, select, textarea")) renderTab();
+});

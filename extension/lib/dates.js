@@ -17,6 +17,8 @@ export function addMonths(s, k) {
   const ny = Math.floor(mi / 12), nm = (mi % 12) + 1;
   return fmt(ny, nm, Math.min(d, daysInMonth(ny, nm)));
 }
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export const monthName = (mi) => MONTH_NAMES[((mi % 12) + 12) % 12];
 export const firstOfMonth = (mi) => `${monthStr(mi)}-01`;
 
 export function todayStr() {

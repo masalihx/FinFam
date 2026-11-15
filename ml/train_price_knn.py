@@ -22,6 +22,9 @@ RESULTS = Path("ml/results/price_knn.json")
 TOKEN = r"(?u)[^\W_]{2,}|\d+"  # same tokens as the JS port: words of 2+ letters, numbers
 
 
+GATE = 3
+
+
 def title_text(df: pd.DataFrame) -> pd.Series:
     return df["title"].str.lower().str.replace(r"\s+", " ", regex=True).str.slice(0, 120)
 
@@ -73,6 +76,15 @@ def main() -> None:
     hi = np.where(np.isnan(hi), base * 1.4, hi)
     results["knn"] = range_metrics(test["price"], lo, hi, mid)
     results["knn"].update({"k": k, "max_features": max_features})
+    # Same-name accessories (cases, tips, cables) can pull the neighbours' price far away from the product.
+    # The extension shows a market price only when the listed price is within 3x of the neighbours' range.
+    price = test["price"].to_numpy()
+    shown = (price >= lo / GATE) & (price <= hi * GATE)
+    err = np.abs(mid - price) / price
+    results["knn_gate"] = {"rule": f"show only if price within [low/{GATE}, high*{GATE}]", "shown_share": round(float(shown.mean()), 3),
+                           "median_error_shown": round(float(np.median(err[shown])), 3),
+                           "median_error_hidden": round(float(np.median(err[~shown])), 3)}
+    print("gate", results["knn_gate"])
     ridge = json.loads(Path("ml/results/price.json").read_text())["model"]
     results["ridge_full_model"] = ridge
     for name in ("category_median", "knn"):

@@ -41,13 +41,14 @@ export class Store {
   constructor(models) { this.models = models; this.key = null; this.data = null; }
 
   get ready() { return !!this.data; }
-  async save() { if (this.key) await backend.set(this.key, this.data); }
+  async save() { if (!this.key) return; this.data.rev = (this.data.rev || 0) + 1; await backend.set(this.key, this.data); } // rev: lets the panel see changes made elsewhere
 
   // Re-open the family that was unlocked last time on this computer (until "Lock").
   async resume() {
     const key = await backend.get(CURRENT_KEY);
     const data = key ? await backend.get(key) : null;
-    if (data) { this.key = key; this.data = data; }
+    this.key = data ? key : null;
+    this.data = data || null;
     return this.ready;
   }
 

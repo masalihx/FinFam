@@ -39,6 +39,7 @@ function escClose(e) { if (e.key === "Escape") closeSheet(); }
 export function closeSheet() { $(".sheet-bg")?.remove(); document.removeEventListener("keydown", escClose); }
 
 export async function busy(btn, fn) {
+  if (!btn) { try { return await fn(); } catch (e) { toast(e.message); } return; } // form sent without a button (Enter in some browsers)
   const label = btn.textContent;
   btn.disabled = true; btn.textContent = "Working…";
   try { return await fn(); } catch (e) { toast(e.message); } finally { btn.disabled = false; btn.textContent = label; }
