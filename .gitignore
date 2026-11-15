@@ -13,3 +13,6 @@ data/raw/
 
 # macOS
 .DS_Store
+
+# PayPal Sandbox app keys for the extension (made from .env by scripts/make_paypal_config.py)
+extension/paypal.config.json

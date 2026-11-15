@@ -135,6 +135,25 @@ check("question -> purchase verdict", a2.topic === "can_afford" && a2.reply.star
 const a3 = answer(app, "hmm");
 check("unsure -> offers other topics", a3.alternatives.length === 2 && a3.confidence < 0.6, JSON.stringify(a3));
 
+// PayPal: Log in with PayPal (user's own account) + payments through our Sandbox shop
+const pp = await import("./lib/paypal.js");
+const au = new URL(pp.authorizeUrl("CID", "https://lakkaedhdeopfgfnpioemhplfomfgbam.chromiumapp.org/paypal", "S1"));
+check("PayPal login URL", au.origin === "https://www.sandbox.paypal.com" && au.searchParams.get("response_type") === "code" && au.searchParams.get("scope").includes("email") && au.searchParams.get("state") === "S1");
+check("PayPal answer: code read, wrong state rejected, cancel explained",
+  pp.readRedirect("https://x.chromiumapp.org/paypal?code=ABC&state=S1", "S1") === "ABC"
+  && (() => { try { pp.readRedirect("https://x.chromiumapp.org/paypal?code=ABC&state=EVIL", "S1"); return false; } catch { return true; } })()
+  && (() => { try { pp.readRedirect("https://x.chromiumapp.org/paypal?error=access_denied&state=S1", "S1"); return false; } catch (e) { return e.message.includes("cancelled"); } })());
+const who = pp.profileOf({ name: "Jane Carter", emails: [{ value: "Jane@Example.com", primary: true }], payer_id: "P1" });
+check("PayPal profile", who.name === "Jane Carter" && who.email === "jane@example.com" && who.payer_id === "P1");
+const shop = [
+  { transaction_info: { transaction_id: "T1", transaction_initiation_date: "2026-11-10T10:00:00+0000", transaction_amount: { value: "42.50" }, transaction_note: "Trader Joe's groceries" }, payer_info: { email_address: "jane@example.com" } },
+  { transaction_info: { transaction_id: "T2", transaction_initiation_date: "2026-11-11T10:00:00+0000", transaction_amount: { value: "99.00" } }, payer_info: { email_address: "someone@else.com" } },
+  { transaction_info: { transaction_id: "T3", transaction_initiation_date: "2026-11-12T10:00:00+0000", transaction_amount: { value: "-10.00" }, transaction_subject: "Refund" }, payer_info: { account_id: "P1" } },
+];
+const fam = pp.familyPayments(shop, who);
+check("PayPal import: only this person's payments, spending negative, refunds positive",
+  fam.length === 2 && fam[0].amount === -42.5 && fam[0].description === "PAYPAL *Trader Joe's groceries" && fam[1].amount === 10 && fam[0].date === "2026-11-10", JSON.stringify(fam));
+
 const failed = results.filter((r) => !r.ok);
 document.getElementById("out").innerHTML = `<p class="${failed.length ? "bad" : "ok"}"><b>${results.length - failed.length}/${results.length} passed</b></p>` +
   results.map((r) => `<div class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.name}${r.ok ? "" : `<pre>${r.detail}</pre>`}</div>`).join("");

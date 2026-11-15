@@ -140,6 +140,8 @@ a.btn { text-decoration: none; }
 
 /* money */
 .btn.paypal { background: var(--brand-soft); color: var(--brand-strong); border-color: #b7e1d9; }
+.btn.paypal-login { background: var(--ink); color: #fff; padding: 10px 14px; }
+.btn.paypal-login:hover:not(:disabled) { background: var(--ink-2); }
 .seg.block { display: grid; grid-template-columns: 1fr 1fr; }
 .seg.block button { padding: 6px 0; }
 .tx-list { list-style: none; margin: var(--s2) 0 0; padding: 0; }

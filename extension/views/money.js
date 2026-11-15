@@ -1,5 +1,5 @@
 // Part 2 of the panel: Money. The family writes expenses and income here (ML picks the category),
-// fixes categories, and can connect its own PayPal Sandbox account.
+// fixes categories, and can connect its PayPal account (Log in with PayPal).
 import { CATEGORY_NAMES, isSpending } from "../lib/finance.js";
 import { monthIndex } from "../lib/dates.js";
 import { connectPaypal, disconnectPaypal, paypalConnected, syncPaypal } from "../lib/paypal.js";
@@ -30,7 +30,7 @@ export async function money(el, app, state = { q: "", shown: PAGE }) {
   el.innerHTML = `<div class="stack">
     <section class="section" aria-labelledby="h-add">
       <div class="section-head"><h2 id="h-add">Add money in or out</h2>
-        <button class="btn ${connected ? "ghost" : "paypal"} sm" id="paypal" aria-haspopup="dialog">${LINK_ICON}${connected ? "PayPal connected" : "Connect PayPal"}</button></div>
+        <button class="btn ${connected ? "ghost" : "paypal"} sm" id="paypal" aria-haspopup="dialog">${LINK_ICON}${connected ? `PayPal · ${esc((s.data.settings.paypal_name || "connected").split(" ")[0])}` : "Connect PayPal"}</button></div>
       <form id="add" class="stack" novalidate>
         <div class="seg block" role="group" aria-label="Expense or income">
           <button type="button" data-kind="expense" aria-pressed="true">Expense</button><button type="button" data-kind="income" aria-pressed="false">Income</button></div>
@@ -112,36 +112,30 @@ function paypalSheet(app, done) {
   const s = app.store, st = s.data.settings;
   if (paypalConnected(s)) {
     const box = sheet(`<div class="section-head"><h2>PayPal</h2><button class="btn ghost sm" id="close">Close</button></div>
-      <p class="small">Connected to your PayPal <b>Sandbox</b> app${st.paypal_connected_at ? ` since ${esc(st.paypal_connected_at)}` : ""}.${st.paypal_synced_at ? ` Last sync: ${esc(st.paypal_synced_at)}.` : ""}</p>
-      <div class="stack"><button class="btn primary block" id="sync">Sync last 90 days</button><button class="btn danger block" id="disconnect">Disconnect</button></div>
-      <p class="xs muted">Disconnect removes the keys from this computer. Payments already imported stay.</p>`, "PayPal");
+      <p class="small">Connected as <b>${esc(st.paypal_name || st.paypal_email)}</b>${st.paypal_email ? ` (${esc(st.paypal_email)})` : ""}${st.paypal_connected_at ? ` since ${esc(st.paypal_connected_at)}` : ""}.${st.paypal_synced_at ? ` Last import: ${esc(st.paypal_synced_at)}.` : ""}</p>
+      <div class="stack"><button class="btn primary block" id="sync">Import payments (last 90 days)</button><button class="btn danger block" id="disconnect">Disconnect</button></div>
+      <p class="xs muted">Disconnect forgets this PayPal account on this computer. Payments already imported stay.</p>`, "PayPal");
     $("#close", box).addEventListener("click", closeSheet);
     $("#sync", box).addEventListener("click", (e) => busy(e.currentTarget, async () => {
       const r = await syncPaypal(s);
-      closeSheet(); done(); toast(`PayPal: ${r.found} payments found, ${r.imported} new.`);
+      closeSheet(); done(); toast(r.found ? `PayPal: ${r.found} payments found, ${r.imported} new.` : "PayPal: no payments yet (new ones can take up to 3 hours to show).", 6000);
     }));
     $("#disconnect", box).addEventListener("click", async () => { await disconnectPaypal(s); closeSheet(); done(); toast("PayPal disconnected."); });
     return;
   }
   const box = sheet(`<div class="section-head"><h2>Connect PayPal</h2><button class="btn ghost sm" id="close">Cancel</button></div>
-    <ol class="steps small">
-      <li>Open <b>developer.paypal.com</b> → <b>Apps &amp; Credentials</b> → <b>Sandbox</b>, and create an app (or open yours).</li>
-      <li>In the app's features, turn on <b>Transaction Search</b>.</li>
-      <li>Copy the <b>Client ID</b> and <b>Secret</b> here.</li></ol>
-    <form id="pp" class="stack" novalidate>
-      <label class="field">Client ID<input class="input" name="id" required autocomplete="off" spellcheck="false"></label>
-      <label class="field">Secret<input class="input" name="secret" type="password" required autocomplete="off"></label>
-      <button class="btn primary block">Connect and import</button></form>
-    <p class="xs muted">Sandbox only: test accounts and test money. FinPilot checks the keys with PayPal and keeps them only in your family's data on this computer.</p>`, "Connect PayPal");
+    <p class="small">Log in with your PayPal account on PayPal's own page. FinPilot never sees your password.</p>
+    <ul class="steps small">
+      <li>PayPal shares your <b>name and email</b> with FinPilot.</li>
+      <li>FinPilot imports your payments made in shops that use FinPilot's PayPal (our Sandbox demo shop), and our ML sorts them into categories.</li></ul>
+    <button class="btn paypal-login block" id="login">${LINK_ICON}Log in with PayPal</button>
+    <p class="xs muted">Sandbox: test accounts and test money. Use a PayPal Sandbox personal account to log in.</p>`, "Connect PayPal");
   $("#close", box).addEventListener("click", closeSheet);
-  $("#pp", box).addEventListener("submit", (e) => {
-    e.preventDefault();
-    const f = formData(e.target);
-    busy(e.submitter, async () => {
-      await connectPaypal(s, f.id, f.secret);
-      const r = await syncPaypal(s).catch((err) => ({ error: err.message }));
-      closeSheet(); done();
-      toast(r.error ? `PayPal connected, but the import failed: ${r.error}` : `PayPal connected: ${r.found} payments found, ${r.imported} new.`, 6000);
-    });
-  });
+  $("#login", box).addEventListener("click", (e) => busy(e.currentTarget, async () => {
+    const who = await connectPaypal(s);
+    const r = await syncPaypal(s).catch((err) => ({ error: err.message }));
+    closeSheet(); done();
+    toast(r.error ? `Connected as ${who.name}, but the import failed: ${r.error}`
+      : `Connected as ${who.name}: ${r.found} payments found, ${r.imported} new.`, 6000);
+  }));
 }

@@ -9,7 +9,7 @@ and no AI keys**. A family opens it with one shared **6-character password** (le
 any product page FinPilot shows a short card: **Worth it / Think about it / Not worth it**, then how much
 the family has left in that category this month, then the **average market price** of similar products
 from our database. The side panel has exactly two parts: the **Advisor** and **Money** (where the family
-writes expenses and income, or connects its own PayPal Sandbox account).
+writes expenses and income, or connects its own PayPal account with **Log in with PayPal**).
 
 *Concert tickets? Fine. Concert tickets for $100 this month? Not worth it — the family has $57 left for
 entertainment, the ML chance of overspending jumps from 20% to 100%, and a price that fits right now is about $16.*
@@ -32,12 +32,12 @@ entertainment, the ML chance of overspending jumps from 20% to 100%, and a price
 | **Family password** | Create a family → FinPilot suggests a 6-character password (or you choose one). Anyone in the family opens it with the same password. Only a salted hash is stored; each family sees only its own data. |
 | **On-page card** | On any product page (or a selected product + price, right-click **Is this worth it?**): verdict first → money left in the category this month and what the family usually spends by month end → ML risk forecast → average market price from our database → a price that fits now. **Postpone** saves it with a reminder. |
 | **Advisor** | This month (spent, income, kept), ML advice cards (category likely to go over, bills due this week, what grew last month, goals behind), **Is it worth it?** for any item, **left to spend** per category with the ML risk, questions with topic buttons, goals. |
-| **Money** | Add an expense or income: the ML model picks the category while you type (you can change it). History with category fixes (one fix re-labels every payment from that merchant) and delete. **Connect PayPal**: paste your own Sandbox app keys → FinPilot checks them with PayPal and imports 90 days. |
+| **Money** | Add an expense or income: the ML model picks the category while you type (you can change it). History with category fixes (one fix re-labels every payment from that merchant) and delete. **Connect PayPal**: the user logs in on PayPal's own page (Log in with PayPal, Sandbox); FinPilot gets their name and email and imports their payments made through our PayPal shop for the last 90 days. |
 
 ## 3. What we added ourselves (beyond calling an API)
 - Six ML parts trained and tested by us, each against simple baselines (and against Gemini where we could).
 - A **backtest of the decision itself** in dollars, not just model metrics.
-- All models **exported from Python and ported to JavaScript**, verified number-for-number: **59 automated checks** in `extension/test.html` (incl. 672 verdict-rule cases and the market search).
+- All models **exported from Python and ported to JavaScript**, verified number-for-number: **63 automated checks** in `extension/test.html` (incl. 672 verdict-rule cases and the market search).
 - An **offline advisor**: our intent model + our money code answer questions; when the model is unsure it offers the next likely topics as buttons.
 
 ## 4. How it works
@@ -56,7 +56,7 @@ entertainment, the ML chance of overspending jumps from 20% to 100%, and a price
    verdict.js  decision rules + fitting price + short explanation
    assistant.js intent model → our tools
    store.js    family data in chrome.storage.local (password hash)
-   paypal.js   PayPal Sandbox: check keys, Transaction Search
+   paypal.js   Log in with PayPal (chrome.identity) + Transaction Search
 ```
 | # | Model | Data | Method |
 |---|---|---|---|
@@ -107,7 +107,8 @@ keywords 30% · **our model 60%** · right answer *or* the right topic offered a
 - **The “usual price” rule trades precision for dollars**: it flags expensive items even in months that end fine.
 - **Missed big purchases**: $542 on Amazon mid-month looked low-risk (36%); the month later tripled.
 - **Categorization mistakes**: credit-card interest read as Entertainment, T-Mobile as Transport — fixable with one click, and the fix spreads to the same merchant.
-- **One computer**: the family's data lives in one browser; syncing across devices needs a server (next step). PayPal is Sandbox only (test money).
+- **One computer**: the family's data lives in one browser; syncing across devices needs a server (next step).
+- **PayPal shows only part of a person's spending.** PayPal gives third-party apps the person's name and email, not their whole payment history, so FinPilot imports only payments made through our PayPal shop (Sandbox, test money). Full history would need a bank-data aggregator (paid) or PayPal partner approval. Our app's PayPal secret sits in the extension because there is no server; a real product would exchange the login code on a server.
 
 ## 7. What's next
 Family sync across devices, real bank connections (open banking), fresher price data, parent approval of teen purchases, a model trained on real (consented) family data.
@@ -116,10 +117,10 @@ Family sync across devices, real bank connections (open banking), fresher price 
 1. Download this repository (Code → Download ZIP) and unzip, or `git clone`.
 2. Chrome → `chrome://extensions` → switch on **Developer mode** → **Load unpacked** → choose the `extension/` folder.
 3. Click the FinPilot icon → the side panel opens → **Try the demo family** (password **DEMO26**) or **Create a new family**.
-4. Optional: **Money → Connect PayPal** → paste the Client ID and Secret of your PayPal **Sandbox** app (developer.paypal.com → Apps & Credentials → Sandbox; turn on *Transaction Search*).
+4. Optional: **Money → Connect PayPal → Log in with PayPal** and log in with a PayPal **Sandbox personal** account. (Developers: this needs `extension/paypal.config.json`, made from `.env` by `python3 scripts/make_paypal_config.py`, and in the Sandbox app: *Log in with PayPal* on, Return URL `https://lakkaedhdeopfgfnpioemhplfomfgbam.chromiumapp.org/paypal`, *Transaction Search* on.)
 5. Open any product page (e.g. Amazon) — the card appears; or select a product and price → right-click → **Is this worth it?**
 
-Engine tests: serve `extension/` over http (`python3 -m http.server`) and open `test.html?memory` (59 checks) or `card-test.html?memory` (the card on a test product page).
+Engine tests: serve `extension/` over http (`python3 -m http.server`) and open `test.html?memory` (63 checks) or `card-test.html?memory` (the card on a test product page).
 Retrain and re-export the models: `pip install -r requirements.txt`, then `python ml/data_prep.py`, the `ml/train_*.py` scripts, and `python ml/export_extension.py`. Results notebook: `notebooks/FinPilot_results.ipynb`. Earlier versions are kept: website v2 in `backend/` and `web/`.
 
 ## 9. Sources
