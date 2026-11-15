@@ -1,25 +1,28 @@
-# FinPilot Chrome extension (v3: everything in the extension)
+# FinPilot Chrome extension (v4: built-in ML, no AI keys)
 
-No server. Our ML models run in the browser; the family's data stays in `chrome.storage.local`.
+No server and no external AI. Our ML models run in the browser; the family's data stays in `chrome.storage.local`.
 
 ## Install
 1. `chrome://extensions` → **Developer mode** on → **Load unpacked** → choose this `extension/` folder.
-2. Click the FinPilot icon: the **side panel** opens. Load the demo family (PINs: Alex 1111, Sam 2222, Maya 3333, Leo 4444) or create your own.
-3. Optional: More → Settings → Gemini API key (free at aistudio.google.com) and PayPal Sandbox keys.
+2. Click the FinPilot icon: the **side panel** opens. **Try the demo family** (password **DEMO26**) or **Create a new family** (6 letters and digits; everyone in the family uses the same password).
+3. Optional: **Money → Connect PayPal** with the Client ID and Secret of your own PayPal **Sandbox** app (turn on *Transaction Search* for the app).
 
 ## Files
 | Path | What |
 |---|---|
-| `panel.html`, `panel.js`, `panel.css`, `views/` | Side panel: first run, profiles, Home, Upcoming, Ask, Me, More (Goals, Check, Transactions, Add data, Postponed, Needs & wants, Settings) |
-| `content.js`, `detect.js` | On shop pages: finds product and price (schema.org → meta tags → Amazon layout → microdata), shows the verdict card |
+| `panel.html`, `panel.js`, `panel.css` | Side panel: family password lock, then two parts |
+| `views/advisor.js` | Part 1, Advisor: this month, advice cards, Is it worth it?, left to spend, questions, goals |
+| `views/money.js` | Part 2, Money: add expense/income (live ML category), history with fixes, Connect PayPal |
+| `content.js`, `detect.js` | On shop pages: finds product and price (schema.org → meta tags → Amazon layout → microdata), shows the card |
 | `background.js` | Runs the engine for the card; opens the panel; right-click “Is this worth it?” |
-| `lib/` | Engine: `ml.js`, `features.js`, `finance.js`, `verdict.js`, `assistant.js`, `gemini.js`, `paypal.js`, `store.js`, `dates.js`, `ui.js` |
-| `models/` | Trained models exported from Python (`ml/export_extension.py`) |
-| `data/` | Demo family, assistant tools/context, test fixtures |
-| `test.html` | 41 checks that the JS engine matches Python (serve the folder over http and open it) |
+| `lib/` | Engine: `ml.js`, `market.js`, `features.js`, `finance.js`, `verdict.js`, `assistant.js`, `paypal.js`, `store.js`, `dates.js`, `ui.js` |
+| `models/` | Trained models exported from Python (`ml/export_extension.py`, `ml/train_price_knn.py`) |
+| `data/` | Demo family and test fixtures |
+| `test.html` | 59 checks that the JS engine matches Python (serve the folder over http and open `test.html?memory`) |
+| `card-test.html` | Developer page: the on-page card on a test product (`?memory&title=...&price=...`) |
 
 ## Privacy
-Only when you use them: product title → Gemini (price opinion), uploaded files and chat messages → Gemini, PayPal Sandbox API.
-Keys are stored only in this browser.
+Nothing leaves the computer, except PayPal Sandbox requests when you connect PayPal. The family password is stored
+only as a salted SHA-256 hash; PayPal Sandbox keys are kept in the family's data in this browser until you disconnect.
 
 This project is a prototype and is not financial advice.

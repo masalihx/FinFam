@@ -90,20 +90,26 @@ FinAI card: verdict first, then the family's money state, then the average marke
 - [x] Compact index exported to JSON; JS search matches Python on test titles
 
 ### Task 13: Family password store (S)
-- [ ] Create family → 6-char password (letters+digits), unique on this browser, stored as salted hash
-- [ ] Unlock with password; lock; demo family password DEMO26
-- [ ] No members/roles; all checks pass on test page
+- [x] Create family → 6-char password (letters+digits), unique on this browser, stored as salted hash
+- [x] Unlock with password; lock; demo family password DEMO26
+- [x] No members/roles; all checks pass on test page
 
 ### Task 14: Built-in advisor without Gemini (M)
-- [ ] Remove Gemini code paths; intent model improved with more training phrases (test questions untouched)
-- [ ] Advisor answers from our tools only
+- [x] Remove Gemini code paths; intent model improved with more training phrases (test questions untouched)
+- [x] Advisor answers from our tools only
 
 ### Task 15: Side panel = Advisor + Money (M)
-- [ ] Advisor: month status ("left to spend" per category), ML advice cards, "Is it worth it?" check, ask box
-- [ ] Money: quick add expense/income with live ML category, list with category fix, Connect PayPal dialog (user's own keys)
+- [x] Advisor: month status ("left to spend" per category), ML advice cards, "Is it worth it?" check, ask box
+- [x] Money: quick add expense/income with live ML category, list with category fix, Connect PayPal dialog (user's own keys)
 
 ### Task 16: FinAI card (S)
-- [ ] Verdict first → family money state (e.g. "$X left for groceries this month") → market average from database
-- [ ] Short: at most 3 lines + buttons
+- [x] Verdict first → family money state (e.g. "$X left for groceries this month") → market average from database
+- [x] Short: at most 3 lines + buttons
 
 ### Task 17: Docs and push (S)
+
+- [x] README, extension README, spec (v4 decisions), video script updated; pushed to GitHub
+
+### Checkpoint v4
+- [x] Engine tests 59/59 (test.html), panel checked in the built-in browser at side-panel width, card checked on card-test.html
+- [ ] Team: load the unpacked extension in real Chrome, open an Amazon product page, connect PayPal with own Sandbox keys
