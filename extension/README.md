@@ -5,7 +5,8 @@ No server and no external AI. Our ML models run in the browser; the family's dat
 ## Install
 1. `chrome://extensions` → **Developer mode** on → **Load unpacked** → choose this `extension/` folder.
 2. Click the FinPilot icon: the **side panel** opens. **Try the demo family** (password **DEMO26**) or **Create a new family** (6 letters and digits; everyone in the family uses the same password).
-3. Optional: **Money → Connect PayPal → Log in with PayPal** with a PayPal Sandbox personal account.
+3. Turn on **Shop check** (switch at the top of the panel, or right-click the toolbar icon → *Turn shop check on*; the icon shows **ON**). Product pages then show Worth it / Think about it / Not worth it. *Turn off* is on the card too.
+4. Optional: **Money → Connect PayPal → Log in with PayPal** with a PayPal Sandbox personal account.
    Developers, once: `python3 scripts/make_paypal_config.py` (writes the git-ignored `paypal.config.json` from `.env`);
    in the Sandbox app turn on *Log in with PayPal* (Return URL `https://lakkaedhdeopfgfnpioemhplfomfgbam.chromiumapp.org/paypal`, scopes: name, email) and *Transaction Search*.
    The `key` in `manifest.json` fixes the extension ID, so this Return URL is the same on every computer.

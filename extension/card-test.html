@@ -47,6 +47,7 @@ chrome.runtime = {
   },
   onMessage: { addListener() {} },
 };
+chrome.storage = { local: { get: async () => ({ "finpilot:card_on": true }), set: async () => {} }, onChanged: { addListener() {} } };
 for (const src of ["detect.js", "content.js"]) {
   await new Promise((r) => { const s = document.createElement("script"); s.src = src; s.onload = r; document.body.append(s); });
 }

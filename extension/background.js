@@ -37,11 +37,27 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   return true;
 });
 
+// Shop check on/off: right-click the toolbar icon; the icon shows ON while it is on.
+const CARD_KEY = "finpilot:card_on";
+async function paintCardState() {
+  const on = (await chrome.storage.local.get(CARD_KEY))[CARD_KEY] === true;
+  chrome.action.setBadgeText({ text: on ? "ON" : "" });
+  chrome.action.setBadgeBackgroundColor({ color: "#15803d" });
+  chrome.contextMenus.update("finpilot-card-toggle", { title: on ? "Turn shop check off" : "Turn shop check on" }, () => void chrome.runtime.lastError);
+}
+chrome.storage.onChanged.addListener((changes, area) => { if (area === "local" && changes[CARD_KEY]) paintCardState(); });
+chrome.runtime.onStartup.addListener(paintCardState);
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
   chrome.contextMenus.create({ id: "finpilot-check", title: "Is this worth it? (FinPilot)", contexts: ["selection"] });
+  chrome.contextMenus.create({ id: "finpilot-card-toggle", title: "Turn shop check on", contexts: ["action"] }, paintCardState);
 });
 
-chrome.contextMenus.onClicked.addListener((info, tab) => {
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   if (info.menuItemId === "finpilot-check" && tab?.id) chrome.tabs.sendMessage(tab.id, { type: "checkSelection", text: info.selectionText || "" });
+  if (info.menuItemId === "finpilot-card-toggle") {
+    const on = (await chrome.storage.local.get(CARD_KEY))[CARD_KEY] === true;
+    await chrome.storage.local.set({ [CARD_KEY]: !on });
+  }
 });

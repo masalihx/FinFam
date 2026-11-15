@@ -23,6 +23,12 @@ button, input, select { font: inherit; color: inherit; }
 .topbar .sub { font-size: var(--fs-xs); color: var(--muted); }
 .topbar .who { min-width: 0; flex: 1; }
 .topbar .family { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.switch { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px 10px 3px 3px; font-size: var(--fs-xs); font-weight: 600; color: var(--ink-2); cursor: pointer; white-space: nowrap; flex: none; }
+.switch .track { width: 28px; height: 16px; border-radius: 999px; background: var(--line); position: relative; transition: background .15s; }
+.switch .knob { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 999px; background: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, .25); transition: transform .15s; }
+.switch[aria-checked="true"] { color: var(--green); border-color: #bbf7d0; background: var(--green-soft); }
+.switch[aria-checked="true"] .track { background: var(--green); }
+.switch[aria-checked="true"] .knob { transform: translateX(12px); }
 main { flex: 1; padding: var(--s4); padding-bottom: var(--s6); }
 main:focus { outline: none; }
 .tabs { position: sticky; top: 53px; z-index: 4; display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); padding: var(--s2) var(--s4); background: var(--surface); border-bottom: 1px solid var(--line); }

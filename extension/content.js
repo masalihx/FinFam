@@ -11,7 +11,11 @@
   };
   const money = (x, d = 0) => "$" + Number(x).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  let root, lastKey = null, product = null, verdict = null;
+  // Shop check on/off (side panel switch, toolbar icon menu, or "Turn off" on the card). Off until the user turns it on.
+  const CARD_KEY = "finpilot:card_on";
+  let enabled = false;
+  let root, lastKey = null, product = null, verdict = null, hideTimer = null;
+  const removeBox = () => { if (root) { root.host.remove(); root = null; } lastKey = null; };
 
   function send(msg) {
     return new Promise((resolve) => {
@@ -47,6 +51,7 @@
         .sec{background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:10px;padding:7px 11px;font-size:13px;cursor:pointer}
         .main:disabled{opacity:.7;cursor:default}
         .foot{padding:7px 14px;font-size:11px;color:#64748b;border-top:1px solid #f1f5f9}
+        .foot a{color:#0f766e;font-weight:600;text-decoration:underline;cursor:pointer}
         button:focus-visible{outline:2px solid #0f766e;outline-offset:2px}
       </style><div id="box"></div>`;
     }
@@ -92,10 +97,11 @@
             <button class="sec" id="dismiss">${v.decision === "buy" ? "OK" : "Close"}</button>
           </div>
         </div>
-        <div class="foot">FinPilot · built-in ML on your family's data · prototype, not financial advice</div>
+        <div class="foot">FinPilot · built-in ML on your family's data · prototype, not financial advice · <a id="off" href="#" role="button">Turn off</a></div>
       </div>`;
     const $ = (s) => box().querySelector(s);
     const collapse = () => pill(`${dot(v.decision)} FinPilot · ${esc(v.title_text)}`, showCard);
+    $("#off").addEventListener("click", (e) => { e.preventDefault(); turnOff(); });
     $("#min").addEventListener("click", collapse);
     $("#dismiss").addEventListener("click", collapse);
     $("#open").addEventListener("click", () => send({ type: "openPanel" }));
@@ -115,8 +121,19 @@
     showCard();
   }
 
-  function scan() {
+  function turnOff() {
+    removeBox();
+    try { chrome.storage.local.set({ [CARD_KEY]: false }); } catch (e) { /* extension reloaded */ }
+  }
+
+  function scan(announce = false) {
+    if (!enabled) return;
     const p = window.FinPilotDetect.detectProduct(document);
+    if (!p && announce) {
+      pill("FinPilot is on · no product with a price on this page");
+      clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => { if (!product) removeBox(); }, 4000);
+    }
     const key = p ? `${location.href}|${p.price}` : null;
     if (!p || key === lastKey) return;
     lastKey = key;
@@ -137,9 +154,19 @@
     return false;
   });
 
-  scan();
-  setTimeout(scan, 1500);
-  setTimeout(scan, 4000);
+  try {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area !== "local" || !changes[CARD_KEY]) return;
+      enabled = changes[CARD_KEY].newValue === true;
+      if (enabled) { lastKey = null; product = null; scan(true); } else removeBox();
+    });
+    chrome.storage.local.get(CARD_KEY).then((v) => {
+      enabled = v[CARD_KEY] === true;
+      scan();
+      setTimeout(scan, 1500);
+      setTimeout(scan, 4000);
+    });
+  } catch (e) { /* extension reloaded: this old copy stays quiet */ }
   let lastUrl = location.href;
   setInterval(() => { if (location.href !== lastUrl) { lastUrl = location.href; lastKey = null; setTimeout(scan, 1200); } }, 1000);
 })();

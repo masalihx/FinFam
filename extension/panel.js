@@ -8,6 +8,15 @@ import { advisor } from "./views/advisor.js";
 import { money } from "./views/money.js";
 
 const root = $("#root");
+
+// "Shop check": show Worth it / Not worth it on shop pages. A device setting (not per family), off until turned on.
+const CARD_KEY = "finpilot:card_on";
+const cardSetting = globalThis.chrome?.storage?.local
+  ? { get: async () => (await chrome.storage.local.get(CARD_KEY))[CARD_KEY] === true,
+      set: (on) => chrome.storage.local.set({ [CARD_KEY]: on }),
+      watch: (fn) => chrome.storage.onChanged.addListener((c, area) => { if (area === "local" && c[CARD_KEY]) fn(c[CARD_KEY].newValue === true); }) }
+  : { get: async () => localStorage.getItem(CARD_KEY) === "1", set: async (on) => localStorage.setItem(CARD_KEY, on ? "1" : "0"), watch: () => {} };
+cardSetting.watch((on) => $("#card-toggle")?.setAttribute("aria-checked", String(on)));
 const TABS = { advisor: ["Advisor", advisor], money: ["Money", money] };
 const app = { models: null, market: null, marketReady: null, store: null, today: todayStr(), tab: "advisor",
   refresh: () => renderTab(), go: (tab) => { app.tab = tab; renderShell(); } };
@@ -100,12 +109,21 @@ function renderShell() {
     <header class="topbar">
       <span class="logo" aria-hidden="true">F</span>
       <div class="who"><div class="family">${esc(fam.name)}</div><div class="sub">${fam.is_demo ? "Demo family · " : ""}prototype, not financial advice</div></div>
+      <button class="switch" role="switch" id="card-toggle" aria-checked="false" title="Show Worth it / Not worth it on shop pages"><span class="track" aria-hidden="true"><span class="knob"></span></span>Shop check</button>
       <button class="btn ghost sm" id="lock" title="Lock: the family password is needed again">Lock</button>
     </header>
     <div class="tabs" role="tablist" aria-label="FinPilot">${Object.entries(TABS).map(([id, [label]]) =>
       `<button role="tab" id="tab-${id}" aria-controls="view" aria-selected="${id === app.tab}" tabindex="${id === app.tab ? 0 : -1}">${label}</button>`).join("")}</div>
     <main id="view" role="tabpanel" aria-labelledby="tab-${app.tab}" tabindex="-1"></main>`;
   $("#lock").addEventListener("click", async () => { await app.store.lock(); app.tab = "advisor"; renderLock(); });
+  const sw = $("#card-toggle");
+  cardSetting.get().then((on) => sw.setAttribute("aria-checked", String(on)));
+  sw.addEventListener("click", async () => {
+    const on = sw.getAttribute("aria-checked") !== "true";
+    sw.setAttribute("aria-checked", String(on));
+    await cardSetting.set(on);
+    toast(on ? "Shop check is on: open a product page and FinPilot shows Worth it / Not worth it." : "Shop check is off.");
+  });
   const tabs = $$("[role=tab]");
   tabs.forEach((t, i) => {
     t.addEventListener("click", () => app.go(t.id.slice(4)));
