@@ -51,6 +51,32 @@ check("goal plans", goals.every((g) => { const e = gExp.find((x) => x.name === g
   JSON.stringify(goals.map((g) => [g.name, g.needed_per_month, g.allocated_per_month, g.projected_date, g.on_track])));
 check("usual price (shopping p90)", close(usualP90(tx, "shopping", fx.today), fx.usual_p90_shopping, 0.01), `${usualP90(tx, "shopping", fx.today)} vs ${fx.usual_p90_shopping}`);
 
+// Task 3: store, demo family, profiles and rights
+const { Store } = await import("./lib/store.js");
+const demo = await (await fetch("./data/demo_family.json")).json();
+const store = new Store(m);
+const t0 = performance.now();
+await store.loadDemo(demo, "2026-11-15");
+const ms = performance.now() - t0;
+check("demo loads under 3 s", ms < 3000, `${ms.toFixed(0)} ms`);
+check("4 profiles", store.members().length === 4 && store.members().filter((x) => x.role === "teen").length === 2);
+check("no transactions after today", store.data.transactions.every((t) => t.date <= "2026-11-15"));
+check("every transaction categorized", store.data.transactions.every((t) => t.category));
+check("seed correction applied", store.data.transactions.filter((t) => t.description === "PURCHASE INTEREST CHARGE").every((t) => t.category === "fees"));
+let wrong = false; try { await store.login(1, "0000"); } catch (e) { wrong = true; }
+check("wrong PIN rejected", wrong);
+await store.login(3, "3333");
+let blocked = false; try { await store.saveSetup([]); } catch (e) { blocked = e.message.includes("Only parents"); }
+check("teen cannot change setup", blocked);
+await store.addGoal({ name: "Bike", target: 300, deadline: "2027-05-01", personal: true });
+check("teen adds personal goal", store.data.goals.some((g) => g.name === "Bike" && g.member_id === 3));
+let famBlocked = false; try { await store.addGoal({ name: "Trip", target: 900, deadline: "2027-05-01", personal: false }); } catch (e) { famBlocked = true; }
+check("teen cannot add family goal", famBlocked);
+await store.login(1, "1111");
+const fixTx = store.data.transactions.find((t) => /T-?MOBILE/i.test(t.description) && t.category_source === "model");
+const n = fixTx ? await store.fixCategory(fixTx.id, "utilities") : -1;
+check("category fix updates same merchant", n > 0, `updated ${n}`);
+
 const failed = results.filter((r) => !r.ok);
 document.getElementById("out").innerHTML = `<p class="${failed.length ? "bad" : "ok"}"><b>${results.length - failed.length}/${results.length} passed</b></p>` +
   results.map((r) => `<div class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.name}${r.ok ? "" : `<pre>${r.detail}</pre>`}</div>`).join("");

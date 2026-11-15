@@ -18,14 +18,14 @@ Overspend features for any day, recurring series, free cash, goal plans, usual p
 - Files: `extension/lib/features.js`, `extension/lib/finance.js`, `ml/export_extension.py`, `extension/test.html`
 
 ### Task 3: Store, demo family and profiles (S)
-- [ ] First run: create family (name, members, roles, PIN) or load the Carters
-- [ ] Demo transactions categorized by the JS model; seed corrections applied
-- [ ] Profile switch with PIN; parent/teen rights enforced in the store API
+- [x] First run: create family (name, members, roles, PIN) or load the Carters
+- [x] Demo transactions categorized by the JS model; seed corrections applied
+- [x] Profile switch with PIN; parent/teen rights enforced in the store API
 - Verify: test page section "store"; manual load in panel
 - Files: `extension/lib/store.js`
 
 ### Checkpoint A
-- [ ] All test-page checks pass; demo family loads in < 3 s
+- [x] All test-page checks pass; demo family loads in < 3 s
 
 ## Phase 2: Product in the side panel
 
