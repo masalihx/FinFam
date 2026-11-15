@@ -27,11 +27,29 @@ SEED = 42
 MIN_PRICE, MAX_PRICE = 1.0, 5000.0
 
 
+def download_amazon() -> None:
+    """Titles, categories and prices only (the full dataset also has 1.6 GB of embeddings)."""
+    if RAW.exists():
+        return
+    import pyarrow.parquet as pq
+    from huggingface_hub import HfFileSystem
+    fs = HfFileSystem()
+    files = fs.glob("datasets/milistu/AMAZON-Products-2023@refs%2Fconvert%2Fparquet/default/train/*.parquet")
+    cols = ["parent_asin", "title", "main_category", "categories", "store", "price", "average_rating", "rating_number"]
+    parts = []
+    for f in files:
+        with fs.open(f) as fh:
+            parts.append(pq.read_table(fh, columns=cols).to_pandas())
+    RAW.parent.mkdir(parents=True, exist_ok=True)
+    pd.concat(parts).to_parquet(RAW, index=False)
+
+
 def clean_title(t: str) -> str:
     return re.sub(r"\s+", " ", str(t)).strip().lower()
 
 
 def load() -> pd.DataFrame:
+    download_amazon()
     df = pd.read_parquet(RAW)
     df["price"] = pd.to_numeric(df["price"], errors="coerce")
     df = df[df["price"].between(MIN_PRICE, MAX_PRICE) & df["title"].notna()].copy()
@@ -119,7 +137,10 @@ def main() -> None:
 
     MODELS.mkdir(parents=True, exist_ok=True)
     RESULTS.mkdir(parents=True, exist_ok=True)
-    joblib.dump({"model": model, "per_cat": per_cat, "overall": overall}, MODELS / "price.joblib")
+    # Keep the hybrid blend chosen by ml/price_hybrid.py if it exists (re-run that script after retraining).
+    old = joblib.load(MODELS / "price.joblib") if (MODELS / "price.joblib").exists() else {}
+    hybrid = {k: old[k] for k in ("blend_weight", "hybrid_band", "gemini_model") if k in old}
+    joblib.dump({"model": model, "per_cat": per_cat, "overall": overall, **hybrid}, MODELS / "price.joblib")
     (RESULTS / "price.json").write_text(json.dumps(results, indent=2, ensure_ascii=False, default=str))
     for title in ["Sony WH-1000XM5 Wireless Noise Canceling Headphones", "Kids winter jacket waterproof",
                   "Stainless steel water bottle 32 oz", "Gaming laptop 16GB RAM RTX 4060"]:
