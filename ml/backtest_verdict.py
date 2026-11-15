@@ -31,9 +31,9 @@ RESULTS = Path("ml/results")
 
 
 def usual_p90(tx: pd.DataFrame, customer: str, category: str, before: pd.Timestamp):
-    """90th percentile of the family's single purchases in a category over the 6 months before."""
+    """90th percentile of the family's single purchases in a category over the 12 months before."""
     h = tx[(tx["customer_id"] == customer) & (tx["label"] == category) & (tx["amount"] < -5)
-           & (tx["transaction_date"] < before) & (tx["transaction_date"] >= before - pd.DateOffset(months=6))]
+           & (tx["transaction_date"] < before) & (tx["transaction_date"] >= before - pd.DateOffset(months=12))]
     return float(np.quantile(-h["amount"], 0.9)) if len(h) >= 5 else None
 
 

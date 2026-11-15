@@ -13,6 +13,8 @@ the family's usual prices (history), the category and need/want (part 1).
 from dataclasses import dataclass, field
 
 RED_RISK = 0.75        # high risk (top ~20% of situations on validation months)
+MIN_RISK_JUMP = 0.05   # a purchase must itself raise the risk to be blamed for it
+MARKET_TOLERANCE = 0.10  # up to 10% above the typical range still counts as a normal price
 MIN_GOAL_PRICE = 20.0  # tiny purchases do not move goals in a meaningful way
 
 
@@ -42,7 +44,7 @@ class Verdict:
 def decide(s: Signals) -> Verdict:
     reasons, checks = [], {}
 
-    over_market = s.market_high is not None and s.price > s.market_high
+    over_market = s.market_high is not None and s.price > s.market_high * (1 + MARKET_TOLERANCE)
     near_market_top = s.market_low is not None and not over_market and s.price > (s.market_low + s.market_high) / 2
     checks["above_market"] = over_market
     if over_market:
@@ -55,12 +57,17 @@ def decide(s: Signals) -> Verdict:
             reasons.append(f"{s.category_name} counts as a need, and the price looks normal.")
         return Verdict("not_worth_it" if over_market else ("think" if near_market_top else "buy"), reasons, checks)
 
-    high_risk = s.risk_after is not None and s.risk_after >= RED_RISK
+    jump = (s.risk_after - s.risk_before) if s.risk_after is not None and s.risk_before is not None else 0.0
+    high_risk = s.risk_after is not None and s.risk_after >= RED_RISK and jump >= MIN_RISK_JUMP
     some_risk = s.risk_after is not None and s.risk_after >= s.warn_threshold
     checks["high_risk"] = high_risk
     if s.risk_after is not None and (high_risk or some_risk):
-        reasons.append(f"Chance of going over your usual {s.category_name} spending this month: "
-                       f"{s.risk_before:.0%} → {s.risk_after:.0%} with this purchase.")
+        if jump < MIN_RISK_JUMP:
+            reasons.append(f"Your {s.category_name} spending is already likely to go over this month "
+                           f"({s.risk_after:.0%}); this small purchase adds little, but every bit counts.")
+        else:
+            reasons.append(f"Chance of going over your usual {s.category_name} spending this month: "
+                           f"{s.risk_before:.0%} → {s.risk_after:.0%} with this purchase.")
 
     above_usual = s.usual_p90 is not None and s.price > s.usual_p90
     checks["above_usual"] = above_usual

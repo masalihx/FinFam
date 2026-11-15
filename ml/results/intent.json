@@ -1,13 +1,13 @@
 {
-  "train_phrases": 346,
-  "test_questions": 43,
+  "train_phrases": 361,
+  "test_questions": 47,
   "keyword_baseline": {
-    "accuracy": 0.581,
-    "macro_f1": 0.627
+    "accuracy": 0.553,
+    "macro_f1": 0.587
   },
   "model": {
-    "accuracy": 0.744,
-    "macro_f1": 0.716
+    "accuracy": 0.723,
+    "macro_f1": 0.698
   },
   "model_errors": [
     {
@@ -61,6 +61,16 @@
       "predicted": "spending"
     },
     {
+      "text": "which charges are about to hit our account",
+      "true": "upcoming",
+      "predicted": "goals"
+    },
+    {
+      "text": "calendar of payments for this month",
+      "true": "upcoming",
+      "predicted": "budget_left"
+    },
+    {
       "text": "good morning",
       "true": "help",
       "predicted": "can_afford"
@@ -85,7 +95,7 @@
     {
       "text": "how big were our bills this month",
       "true": "spending",
-      "predicted": "help"
+      "predicted": "upcoming"
     },
     {
       "text": "thinking about a $600 ipad, good idea?",
@@ -156,6 +166,21 @@
       "text": "things i put off buying",
       "true": "postponed",
       "predicted": "can_afford"
+    },
+    {
+      "text": "which charges are about to hit our account",
+      "true": "upcoming",
+      "predicted": "help"
+    },
+    {
+      "text": "what do we owe in the next two weeks",
+      "true": "upcoming",
+      "predicted": "help"
+    },
+    {
+      "text": "calendar of payments for this month",
+      "true": "upcoming",
+      "predicted": "help"
     }
   ]
 }

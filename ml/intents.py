@@ -8,7 +8,7 @@ import itertools
 import random
 import re
 
-INTENTS = ["spending", "can_afford", "budget_left", "goals", "where_losing", "postponed", "help"]
+INTENTS = ["spending", "can_afford", "budget_left", "goals", "where_losing", "postponed", "upcoming", "help"]
 
 CATS = ["dining", "restaurants", "coffee", "groceries", "food", "shopping", "clothes", "amazon", "gas",
         "transport", "uber", "movies", "entertainment", "subscriptions", "netflix", "travel", "health",
@@ -52,6 +52,11 @@ TEMPLATES = {
         "what did i postpone", "show postponed purchases", "how much did i save by waiting",
         "what is on my wait list", "remind me what i postponed", "postponed items",
         "what purchases did i delay", "how much money is waiting", "list my postponed things",
+    ],
+    "upcoming": [
+        "what bills are coming up", "upcoming payments", "what do we have to pay {month}", "when is rent due",
+        "what payments are due soon", "show upcoming expenses", "any bills next week", "what will be charged soon",
+        "list our regular payments", "what subscriptions renew soon", "what is due before payday",
     ],
     "help": [
         "hi", "hello", "what can you do", "help", "who are you", "how does this work", "thanks", "thank you",
@@ -100,6 +105,10 @@ TEST_QUESTIONS = [
     ("things i put off buying", "postponed"),
     ("how much have i not spent thanks to waiting", "postponed"),
     ("my delayed purchases list", "postponed"),
+    ("which charges are about to hit our account", "upcoming"),
+    ("is the phone bill due soon", "upcoming"),
+    ("what do we owe in the next two weeks", "upcoming"),
+    ("calendar of payments for this month", "upcoming"),
     ("good morning", "help"),
     ("what are you", "help"),
     ("can you explain what you do", "help"),
@@ -107,6 +116,7 @@ TEST_QUESTIONS = [
 ]
 
 KEYWORDS = [
+    ("upcoming", ["upcoming", "due", "coming up", "renew", "bills"]),
     ("postponed", ["postpone", "wait list", "waiting", "delay"]),
     ("goals", ["goal", "college", "fund", "save for", "target"]),
     ("where_losing", ["losing", "cut", "save more", "leak", "overspending on", "biggest", "spend less"]),
