@@ -136,6 +136,7 @@ function paypalSheet(app, done) {
     const r = await syncPaypal(s).catch((err) => ({ error: err.message }));
     closeSheet(); done();
     toast(r.error ? `Connected as ${who.name}, but the import failed: ${r.error}`
-      : `Connected as ${who.name}: ${r.found} payments found, ${r.imported} new.`, 6000);
+      : r.found ? `Connected as ${who.name}: ${r.found} payments found, ${r.imported} new.`
+      : `Connected as ${who.name}. No payments through FinPilot's PayPal shop yet — PayPal shows new ones with up to a 3-hour delay. Use Import payments later.`, 9000);
   }));
 }
