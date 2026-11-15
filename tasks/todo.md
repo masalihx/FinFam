@@ -4,16 +4,16 @@
 
 ### Task 1: JS models match Python (S)
 Models exported to JSON run in JS with the same outputs.
-- [ ] Categorizer, intent: same labels as Python on test vectors
-- [ ] Price: same prediction within $0.02; overspend, recurring: same probability within 1e-4
+- [x] Categorizer, intent: same labels as Python on test vectors
+- [x] Price: same prediction within $0.02; overspend, recurring: same probability within 1e-4
 - Verify: `extension/test.html` shows no mismatches
 - Files: `extension/lib/ml.js`, `extension/test.html`, `ml/export_extension.py`
 
 ### Task 2: Live features and money math match Python (M)
 Overspend features for any day, recurring series, free cash, goal plans, usual price.
-- [ ] Overspend features for the demo family on a fixed date equal Python's (all 20 features)
-- [ ] Upcoming recurring payments list equals Python's for the same date
-- [ ] Free cash and goal plan equal Python's
+- [x] Overspend features for the demo family on a fixed date equal Python's (all 20 features)
+- [x] Upcoming recurring payments list equals Python's for the same date
+- [x] Free cash and goal plan equal Python's
 - Verify: test page section "finance" all green
 - Files: `extension/lib/features.js`, `extension/lib/finance.js`, `ml/export_extension.py`, `extension/test.html`
 

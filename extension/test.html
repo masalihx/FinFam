@@ -1,13 +1,58 @@
-<!doctype html><meta charset="utf-8"><title>engine test</title><pre id="out">running...</pre>
+<!doctype html>
+<meta charset="utf-8">
+<title>FinPilot engine tests</title>
+<style>body{font:14px system-ui;margin:20px} .ok{color:#15803d} .bad{color:#b91c1c} pre{white-space:pre-wrap}</style>
+<h1>FinPilot engine tests (JS vs Python)</h1>
+<div id="out">running…</div>
 <script type="module">
 import { loadModels } from "./lib/ml.js";
+import { FORECAST_CATEGORIES, features, vector } from "./lib/features.js";
+import { familyState, monthlyFreeCash, planGoals, upcomingRecurring, usualP90, yearlyIncome } from "./lib/finance.js";
+
+const results = [];
+const check = (name, ok, detail = "") => results.push({ name, ok, detail });
+const close = (a, b, tol) => Math.abs(a - b) <= tol;
+
 const m = await loadModels("./");
-const res = {};
-let ok = 0; res.categorizer = m.tests.categorizer.filter(t => { const p = m.categorizer.predict(t.text); if (p === t.expected) ok++; return p !== t.expected; }).map(t => [t.text, t.expected, m.categorizer.predict(t.text)]); res.cat_ok = ok + "/" + m.tests.categorizer.length;
-res.price = m.tests.price.map(t => [t.expected, +Math.exp(m.price.predict(t.text)).toFixed(2)]).filter(([a,b]) => Math.abs(a-b) > 0.02);
-res.intent = m.tests.intent.filter(t => m.intent.predict(t.text) !== t.expected).map(t => t.text);
-res.overspend = m.tests.overspend.map(t => [t.expected, +m.overspend.proba(t.x).toFixed(6)]).filter(([a,b]) => Math.abs(a-b) > 1e-4);
-res.recurring = m.tests.recurring.map(t => [t.expected, +m.recurring.proba(t.x).toFixed(6)]).filter(([a,b]) => Math.abs(a-b) > 1e-4);
-document.getElementById("out").textContent = JSON.stringify(res, null, 1);
-window.RESULT = res;
+
+// Task 1: models
+check("categorizer labels", m.tests.categorizer.every((t) => m.categorizer.predict(t.text) === t.expected));
+check("intent labels", m.tests.intent.every((t) => m.intent.predict(t.text) === t.expected));
+check("price predictions", m.tests.price.every((t) => close(Math.exp(m.price.predict(t.text)), t.expected, 0.02)));
+check("overspend probabilities", m.tests.overspend.every((t) => close(m.overspend.proba(t.x), t.expected, 1e-4)));
+check("recurring probabilities", m.tests.recurring.every((t) => close(m.recurring.proba(t.x), t.expected, 1e-4)));
+
+// Task 2: live features and money math on the demo family (fixture computed by the Python backend)
+const fx = await (await fetch("./data/test_fixture.json")).json();
+const tx = fx.transactions;
+const members = [{ id: 1, role: "parent" }, { id: 2, role: "parent" }, { id: 3, role: "teen" }, { id: 4, role: "teen" }];
+check("yearly income", close(yearlyIncome(tx, fx.today), fx.yearly_income, 0.01), `${yearlyIncome(tx, fx.today)} vs ${fx.yearly_income}`);
+const state = familyState(tx, members, fx.today);
+const names = m.overspendSpec.features;
+for (const c of FORECAST_CATEGORIES) {
+  const row = features(state, c, fx.today);
+  const exp = fx.features[c];
+  if (!exp) { check(`features ${c}`, row === null, "expected no history"); continue; }
+  const x = vector(row, names);
+  const bad = names.filter((f, i) => !close(x[i], exp.x[i], 1e-3 * Math.max(1, Math.abs(exp.x[i]))));
+  check(`features ${c}`, bad.length === 0, bad.map((f) => `${f}: ${x[names.indexOf(f)]} vs ${exp.x[names.indexOf(f)]}`).join("; "));
+  check(`risk ${c}`, close(m.overspend.proba(x), exp.prob, 1e-3), `${m.overspend.proba(x).toFixed(4)} vs ${exp.prob}`);
+}
+const free = monthlyFreeCash(tx, fx.today);
+check("free cash", close(free, fx.free_cash, 0.01), `${free} vs ${fx.free_cash}`);
+const up = upcomingRecurring(m, tx, fx.today, 30).map((u) => `${u.date}|${u.amount.toFixed(2)}|${u.category}`).sort();
+const upExp = fx.upcoming.map((u) => `${u.date}|${Number(u.amount).toFixed(2)}|${u.category}`).sort();
+check("upcoming payments", JSON.stringify(up) === JSON.stringify(upExp), `JS ${up.length}, Python ${upExp.length}; only JS: ${up.filter((x) => !upExp.includes(x)).join(", ")}; only Py: ${upExp.filter((x) => !up.includes(x)).join(", ")}`);
+const demoGoals = [{ name: "Kids' college fund", target: 40000, saved: 6000, deadline: "2030-09-01" },
+  { name: "Family car", target: 12000, saved: 2500, deadline: "2027-12-01" }];
+const goals = planGoals(demoGoals, free, fx.today);
+const gExp = fx.goals;
+check("goal plans", goals.every((g) => { const e = gExp.find((x) => x.name === g.name); return e && close(g.needed_per_month, e.needed_per_month, 0.01) && close(g.allocated_per_month, e.allocated_per_month, 0.05) && g.projected_date === e.projected_date && g.on_track === e.on_track; }),
+  JSON.stringify(goals.map((g) => [g.name, g.needed_per_month, g.allocated_per_month, g.projected_date, g.on_track])));
+check("usual price (shopping p90)", close(usualP90(tx, "shopping", fx.today), fx.usual_p90_shopping, 0.01), `${usualP90(tx, "shopping", fx.today)} vs ${fx.usual_p90_shopping}`);
+
+const failed = results.filter((r) => !r.ok);
+document.getElementById("out").innerHTML = `<p class="${failed.length ? "bad" : "ok"}"><b>${results.length - failed.length}/${results.length} passed</b></p>` +
+  results.map((r) => `<div class="${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "✗"} ${r.name}${r.ok ? "" : `<pre>${r.detail}</pre>`}</div>`).join("");
+window.RESULTS = results;
 </script>

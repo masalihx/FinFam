@@ -67,6 +67,7 @@ def categorizer() -> dict:
     test = test[~test["customer_id"].isin(pool)]  # same 50 held-out families as ml/train_categorizer.py
     model = compact_text_model(20000, 8000, LogisticRegression(C=5.0, max_iter=2000)).fit(train["text"], train["label"])
     f1 = f1_score(test["label"], model.predict(test["text"]), labels=CATEGORIES, average="macro", zero_division=0)
+    joblib.dump(model, "ml/models/categorizer_compact.joblib")
     clf = model.named_steps["clf"]
     sample = test.sample(40, random_state=0)
     return {"name": "categorizer", "test_macro_f1": round(f1, 4), "classes": list(clf.classes_),
@@ -187,6 +188,43 @@ def demo_family() -> dict:
     }
 
 
+def finance_fixture(family: dict) -> dict:
+    """Expected outputs of the Python backend logic for the demo family on a fixed day (dataset time)."""
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from backend import finance, ml_service
+    from overspend_features import FORECAST_CATEGORIES
+    today = pd.Timestamp("2026-08-15")
+    ids = {m["key"]: i + 1 for i, m in enumerate(family["members"])}
+    cat = joblib.load("ml/models/categorizer_compact.joblib")
+    tx = [t for t in family["transactions"] if t["date"] <= str(today.date())]
+    texts = [("[debit] " if t["amount"] < 0 else "[credit] ") + t["description"] for t in tx]
+    cats = cat.predict(texts)
+    rows = [{"id": t["id"], "room_id": 1, "member_id": ids[t["member"]], "date": t["date"], "amount": t["amount"],
+             "description": t["description"], "merchant": t.get("merchant"), "channel": None,
+             "category": "income" if t["source"] == "allowance" else c, "category_source": "model",
+             "source": t["source"]} for t, c in zip(tx, cats)]
+    df = finance.tx_frame(rows)
+    income = ml_service.yearly_income(df, today)
+    state = ml_service.family_state(df, income, 2)
+    over = ml_service.OverspendModel()
+    feats = {}
+    for c in FORECAST_CATEGORIES:
+        row = state.features(c, today, 0.0)
+        if row is not None:
+            feats[c] = {"x": [round(float(row[f]), 6) for f in FEATURES], "prob": round(over.probability(row), 6)}
+    up = ml_service.RecurringModel().upcoming(df, today, 30)
+    free = finance.monthly_free_cash(df, today)
+    goals = [dict(g, id=i + 1, member_id=None) for i, g in enumerate(family["family_goals"])]
+    return {
+        "today": str(today.date()), "member_ids": ids, "transactions": rows, "yearly_income": round(income, 4),
+        "features": feats, "free_cash": round(free, 4),
+        "upcoming": [{"date": u["date"], "amount": u["amount"], "category": u["category"]} for u in up],
+        "goals": [{k: g[k] for k in ("name", "needed_per_month", "allocated_per_month", "projected_date", "on_track")}
+                  for g in finance.plan_goals(goals, free, today)],
+        "usual_p90_shopping": finance.usual_p90(df, "shopping", today),
+    }
+
+
 def write(name: str, obj: dict, folder: Path = OUT) -> None:
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / f"{name}.json"
@@ -206,7 +244,9 @@ def main() -> None:
     write("intent", it)
     write("overspend", overspend())
     write("recurring", recurring())
-    write("demo_family", demo_family(), DATA_OUT)
+    family = demo_family()
+    write("demo_family", family, DATA_OUT)
+    write("test_fixture", finance_fixture(family), DATA_OUT)
     summary = {"categorizer_macro_f1": cat["test_macro_f1"], "price": pr["test"], "intent_macro_f1": it["test_macro_f1"]}
     Path("ml/results/extension_models.json").write_text(json.dumps(summary, indent=2))
 
