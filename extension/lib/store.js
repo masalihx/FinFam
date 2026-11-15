@@ -5,9 +5,13 @@ import { addDays, addMonths, monthIndex, todayStr } from "./dates.js";
 
 const KEY = "finpilot";
 
+// Inside the extension: chrome.storage.local. On a plain test page: localStorage (or memory with ?memory).
 const backend = globalThis.chrome?.storage?.local
   ? { get: async () => (await chrome.storage.local.get(KEY))[KEY], set: (v) => chrome.storage.local.set({ [KEY]: v }) }
-  : { mem: null, async get() { return this.mem; }, async set(v) { this.mem = structuredClone(v); } }; // test page
+  : globalThis.location?.search.includes("memory")
+    ? { mem: null, async get() { return this.mem; }, async set(v) { this.mem = structuredClone(v); } }
+    : { async get() { const s = localStorage.getItem(KEY); return s ? JSON.parse(s) : null; },
+        async set(v) { localStorage.setItem(KEY, JSON.stringify(v)); } };
 
 export class Forbidden extends Error {}
 

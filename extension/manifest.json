@@ -1,28 +1,30 @@
 {
   "manifest_version": 3,
   "name": "FinPilot — is it worth it?",
-  "version": "0.2.0",
-  "description": "On any product page (or a selected product and price), FinPilot checks your family's budget, your usual prices and market prices: Buy, Think about it or Not worth it. Prototype, not financial advice.",
+  "version": "0.3.0",
+  "description": "FinPilot: your family's money copilot inside Chrome. On any product page it checks your family budget, your usual prices and market prices: Buy, Think about it or Not worth it. Everything runs on this computer. Prototype, not financial advice.",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
   "action": {
-    "default_popup": "popup.html",
-    "default_title": "FinPilot"
+    "default_title": "Open FinPilot"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "permissions": [
     "storage",
-    "activeTab",
-    "contextMenus"
+    "unlimitedStorage",
+    "sidePanel",
+    "contextMenus",
+    "activeTab"
   ],
   "host_permissions": [
-    "http://localhost/*",
-    "http://127.0.0.1/*"
+    "https://generativelanguage.googleapis.com/*",
+    "https://api-m.sandbox.paypal.com/*"
   ],
   "content_scripts": [
     {
@@ -36,5 +38,8 @@
       ],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "side_panel": {
+    "default_path": "panel.html"
+  }
 }
