@@ -30,25 +30,25 @@ Overspend features for any day, recurring series, free cash, goal plans, usual p
 ## Phase 2: Product in the side panel
 
 ### Task 4: Side panel shell + Family overview (M)
-- [ ] Panel opens from the toolbar icon; profile picker → overview (KPIs, categories with risk, upcoming, who spent what, family goals)
+- [x] Panel opens from the toolbar icon; profile picker → overview (KPIs, categories with risk, upcoming, who spent what, family goals)
 - Verify: screenshot of the panel page; numbers equal the v2 website for the demo family
 - Files: `extension/manifest.json`, `extension/panel.html`, `extension/panel.js`, `extension/panel.css`
 
 ### Task 5: Verdict everywhere (M)
-- [ ] `verdict.js` port; market price = our model blended with Gemini (cached)
-- [ ] Check tab in the panel; on-page card via background worker uses the same engine
-- [ ] Concert tickets $100 → Not worth it with a reasonable price; headphones $348 → Not worth it
+- [x] `verdict.js` port; market price = our model blended with Gemini (cached)
+- [x] Check tab in the panel; on-page card via background worker uses the same engine
+- [x] Concert tickets $100 → Not worth it with a reasonable price; headphones $348 → Not worth it
 - Verify: demo product page card + Check tab
 - Files: `extension/lib/verdict.js`, `extension/background.js`, `extension/content.js`, `extension/panel.js`
 
 ### Task 6: Upcoming, Goals, My space (M)
-- [ ] Upcoming list (ML recurring + plans) and rest-of-month forecast; add/remove plan
-- [ ] Family + personal goals; add savings; teen space with allowance, earnings, cash expense
+- [x] Upcoming list (ML recurring + plans) and rest-of-month forecast; add/remove plan
+- [x] Family + personal goals; add savings; teen space with allowance, earnings, cash expense
 - Files: `extension/panel.js`, `extension/lib/store.js`
 
 ### Task 7: Needs & wants + Transactions with corrections (S)
-- [ ] Setup suggestions (ML) → parent confirms, limits saved and used by the verdict
-- [ ] Transactions list with filters; category fix updates same-merchant rows
+- [x] Setup suggestions (ML) → parent confirms, limits saved and used by the verdict
+- [x] Transactions list with filters; category fix updates same-merchant rows
 - Files: `extension/panel.js`, `extension/lib/finance.js`
 
 ### Checkpoint B

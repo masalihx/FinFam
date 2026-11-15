@@ -35,7 +35,7 @@ h3 { font-size: var(--fs-md); margin: 0; }
 .muted { color: var(--muted); }
 .small { font-size: var(--fs-sm); }
 .xs { font-size: var(--fs-xs); }
-.num { font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* blocks */
 .stack > * + * { margin-top: var(--s3); }
